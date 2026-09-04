@@ -86,3 +86,29 @@ def test_real_alert_sender():
     assert data["channel"] == "SMS"
     assert data["status"] in ["DELIVERED", "SENT_WITH_FALLBACK"]
 
+def test_real_sos_distress():
+    res = client.post("/api/sos/trigger", json={
+        "lat": 30.4025,
+        "lng": 79.3240,
+        "accuracy_m": 4.5,
+        "location_name": "Chamoli Lowland Hamlet",
+        "sender_name": "Test Civilian",
+        "sender_phone": "+91-9876543210",
+        "stranded_count": 4,
+        "water_depth": "Rooftop Trapped",
+        "medical_urgency": "Infant on Board",
+        "notify_telegram": False,
+        "notify_sms": False
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "beacon_id" in data
+    assert data["priority_score"] >= 90
+    assert "assigned_ndrf_unit" in data
+    
+    # Verify active list
+    active_res = client.get("/api/sos/active")
+    assert active_res.status_code == 200
+    assert len(active_res.json()) >= 1
+
+
