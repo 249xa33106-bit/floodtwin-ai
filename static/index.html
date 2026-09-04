@@ -535,31 +535,34 @@
       }, 200);
     }
 
+    function getBaseLayer() {
+      return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri &copy; OpenStreetMap',
+        maxZoom: 16
+      });
+    }
+
     function initMaps() {
       const h = HOTSPOTS[currentHotspot];
-      const baseLayers = () => L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 18
-      });
 
       // Dashboard Map
       maps.dash = L.map('mapDash').setView([h.lat, h.lng], 13);
-      baseLayers().addTo(maps.dash);
+      getBaseLayer().addTo(maps.dash);
       populateMapFeatures(maps.dash, h);
 
       // Full Grid Map
       maps.full = L.map('mapFull').setView([h.lat, h.lng], 13);
-      baseLayers().addTo(maps.full);
+      getBaseLayer().addTo(maps.full);
       populateMapFeatures(maps.full, h);
 
       // Twin Map
       maps.twin = L.map('mapTwin').setView([h.lat, h.lng], 13);
-      baseLayers().addTo(maps.twin);
+      getBaseLayer().addTo(maps.twin);
       populateMapFeatures(maps.twin, h);
 
       // Evac Map
       maps.evac = L.map('mapEvac').setView([h.lat, h.lng], 13);
-      baseLayers().addTo(maps.evac);
+      getBaseLayer().addTo(maps.evac);
       populateMapFeatures(maps.evac, h);
       drawEvacRoutes(maps.evac, h);
     }
