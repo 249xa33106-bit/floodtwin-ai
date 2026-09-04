@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any
+from typing import Dict, Any
 
 class DemoScenariosEngine:
     def __init__(self):
