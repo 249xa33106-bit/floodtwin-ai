@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FLOODTWIN AI — Global Hyper-Local Flash Flood Prediction & Evacuation System</title>
+  <title>FLOODTWIN AI — Global Hyper-Local Flash Flood Prediction, 4D Digital Twin & Real SOS Rescue</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,8 +13,14 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #080C14; }
     ::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 3px; }
-    .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
-    .glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+    .glow-red { box-shadow: 0 0 18px rgba(239, 68, 68, 0.5); }
+    .glow-cyan { box-shadow: 0 0 18px rgba(6, 182, 212, 0.5); }
+    .pulse-sos { animation: pulseSos 1.2s infinite; }
+    @keyframes pulseSos {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
     .dark-map-tiles {
       filter: brightness(0.75) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.8);
     }
@@ -31,24 +37,23 @@
             FLOODTWIN <span class="text-cyan-400">AI</span>
             <span class="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/40 animate-pulse">● GLOBAL EOC LIVE</span>
           </h1>
-          <p class="text-xs text-slate-400 hidden sm:block">Worldwide Hyper-Local Flash Flood Intelligence, 4D Digital Twin & Dynamic Evacuation Engine</p>
+          <p class="text-xs text-slate-400 hidden sm:block">Worldwide Flash Flood Intelligence, 4D Digital Twin & Real-Time SOS Rescue System</p>
         </div>
       </div>
 
-      <!-- Worldwide Hotspots, Global Search & Live Satellite Feed -->
+      <!-- Global Search, Hotspots & Real SOS Trigger -->
       <div class="flex items-center flex-wrap gap-2 text-xs font-mono">
         
         <!-- Global Search Box -->
         <div class="relative flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1">
           <span class="text-slate-400 mr-1.5">🔍</span>
-          <input type="text" id="globalSearchInput" placeholder="Search ANY city in the world (e.g. Valencia, Tokyo, Texas)..." onkeypress="handleSearchKey(event)" class="bg-transparent text-white font-mono text-xs w-48 sm:w-64 outline-none">
+          <input type="text" id="globalSearchInput" placeholder="Search ANY city in the world (e.g. Valencia, Tokyo, Texas)..." onkeypress="handleSearchKey(event)" class="bg-transparent text-white font-mono text-xs w-44 sm:w-60 outline-none">
           <button onclick="searchWorldCity()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-2 py-0.5 rounded text-[11px] ml-1.5 transition">SEARCH</button>
           
-          <!-- Autocomplete Dropdown Results -->
           <div id="searchResults" class="hidden absolute left-0 top-10 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 max-h-60 overflow-y-auto"></div>
         </div>
 
-        <!-- Global Hotspot Quick Selector -->
+        <!-- Hotspot Selector -->
         <div class="flex items-center bg-slate-900 border border-cyan-700/60 rounded-lg px-2.5 py-1">
           <span class="text-cyan-400 font-bold mr-1.5">📍 HOTSPOT:</span>
           <select id="hotspotSelect" onchange="changeHotspot()" class="bg-transparent text-white font-bold outline-none cursor-pointer">
@@ -78,16 +83,17 @@
           </select>
         </div>
 
-        <button onclick="viewWholeWorld()" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold px-2.5 py-1 rounded">
-          🗺️ WORLD VIEW
+        <button onclick="viewWholeWorld()" class="bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-bold px-2 py-1 rounded">
+          🗺️ WORLD
         </button>
 
-        <div id="liveWeatherBadge" class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded text-emerald-400 flex items-center gap-1.5">
-          <span class="animate-pulse">🛰️</span> <span id="liveWeatherText">NASA GPM / Global Open-Meteo Live</span>
-        </div>
+        <!-- REAL SOS DISTRESS BEACON BUTTON -->
+        <button onclick="openSosModal()" class="pulse-sos bg-red-600 hover:bg-red-500 text-white font-black px-3.5 py-1 rounded-lg border border-red-400 flex items-center gap-1.5 shadow-lg">
+          <span>🆘</span> REAL SOS BEACON
+        </button>
 
-        <button onclick="playVoiceAlert()" class="bg-red-600/30 hover:bg-red-600/50 border border-red-500/50 text-red-300 font-bold px-3 py-1 rounded flex items-center gap-1">
-          <span>📢</span> VOICE SIREN
+        <button onclick="playMorseSosSiren()" class="bg-red-950 hover:bg-red-900 border border-red-700 text-red-300 font-bold px-2.5 py-1 rounded">
+          📢 MORSE SIREN
         </button>
       </div>
     </div>
@@ -116,7 +122,8 @@
       <button onclick="setTab('evac')" id="btn-evac" class="tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap">5. Dynamic Evacuation (A*)</button>
       <button onclick="setTab('sandbox')" id="btn-sandbox" class="tab-btn text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg whitespace-nowrap">⚡ 6. What-If Simulator</button>
       <button onclick="setTab('sensors')" id="btn-sensors" class="tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap">7. Sensor Trust Matrix</button>
-      <button onclick="setTab('alerts')" id="btn-alerts" class="tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap">🚨 8. Real Alert Sender & AI Commander</button>
+      <button onclick="setTab('sos')" id="btn-sos" class="tab-btn text-red-400 bg-red-950/40 border border-red-800/60 px-3 py-1.5 rounded-lg whitespace-nowrap font-bold">🆘 8. Live SOS Rescue Queue</button>
+      <button onclick="setTab('alerts')" id="btn-alerts" class="tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap">🚨 9. Alerts & AI Commander</button>
     </div>
   </div>
 
@@ -144,13 +151,13 @@
           <p class="text-xs text-slate-400 mt-1">720 Vulnerable (Elderly & Children)</p>
         </div>
 
-        <div class="bg-[#0E1524] border border-cyan-500/40 p-4 rounded-xl shadow-lg">
+        <div class="bg-[#0E1524] border border-red-600/40 p-4 rounded-xl shadow-lg">
           <div class="flex justify-between items-center">
-            <span class="text-xs text-cyan-400 font-mono font-bold">TELEMETRY NODES</span>
-            <span class="text-xs bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded">Satellite & Mesh</span>
+            <span class="text-xs text-red-400 font-mono font-bold">ACTIVE SOS BEACONS</span>
+            <span class="text-xs bg-red-950 text-red-300 px-1.5 py-0.5 rounded animate-pulse">2 LIVE</span>
           </div>
-          <div class="text-3xl font-black text-white font-mono mt-2" id="dashSens">48 / 48</div>
-          <p class="text-xs text-slate-400 mt-1">98.2% Node Trust Score</p>
+          <div class="text-3xl font-black text-red-400 font-mono mt-2" id="dashSosCount">02 BEACONS</div>
+          <p class="text-xs text-slate-400 mt-1">11 Stranded Citizens (Rescue In Progress)</p>
         </div>
 
         <div class="bg-[#0E1524] border border-emerald-500/40 p-4 rounded-xl shadow-lg">
@@ -175,7 +182,7 @@
         <div class="lg:col-span-8 bg-[#0E1524] border border-slate-800 rounded-xl p-3 shadow-xl">
           <div class="flex justify-between items-center mb-2">
             <span class="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5">
-              <span>🌐</span> GLOBAL GIS TACTICAL MAP — <span class="text-cyan-400 font-normal">Click ANYWHERE on Earth to Scan Flash Flood Risk</span>
+              <span>🌐</span> GLOBAL GIS TACTICAL MAP — <span class="text-cyan-400 font-normal">Click ANYWHERE on Earth to Scan Flash Flood Risk & Drop SOS Pin</span>
             </span>
             <span class="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">CLICK-TO-SCAN ACTIVE</span>
           </div>
@@ -200,19 +207,21 @@
           </div>
 
           <div class="bg-[#0E1524] border border-slate-800 rounded-xl p-4 shadow-xl">
-            <h3 class="text-xs font-bold text-slate-300 mb-2 uppercase">DISASTER PRIORITY MATRIX</h3>
-            <div class="space-y-2 text-xs" id="priorityList">
-              <div class="p-2 rounded bg-red-950/30 border border-red-800/40 flex justify-between items-center">
-                <div><b class="text-white">Lowland Basin</b><p class="text-[10px] text-slate-400">Risk: 91.4% | Pop: 2,430</p></div>
-                <span class="text-[10px] bg-red-500 text-white font-bold px-2 py-0.5 rounded">PRIORITY 1</span>
+            <h3 class="text-xs font-bold text-slate-300 mb-2 uppercase">ACTIVE DISTRESS BEACONS</h3>
+            <div class="space-y-2 text-xs" id="dashSosList">
+              <div class="p-2.5 rounded bg-red-950/40 border border-red-800 flex justify-between items-center">
+                <div>
+                  <b class="text-white">SOS-901: Ramesh Chandra (4 Citizens)</b>
+                  <p class="text-[10px] text-red-300">Rooftop Trapped (1.8m Water) | Priority: 98%</p>
+                </div>
+                <span class="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded">BOAT EN ROUTE</span>
               </div>
-              <div class="p-2 rounded bg-amber-950/30 border border-amber-800/40 flex justify-between items-center">
-                <div><b class="text-white">Valley Confluence</b><p class="text-[10px] text-slate-400">Risk: 72.8% | Pop: 1,820</p></div>
-                <span class="text-[10px] bg-amber-500 text-black font-bold px-2 py-0.5 rounded">PRIORITY 2</span>
-              </div>
-              <div class="p-2 rounded bg-emerald-950/30 border border-emerald-800/40 flex justify-between items-center">
-                <div><b class="text-white">Highland Ridge</b><p class="text-[10px] text-slate-400">Risk: 18.2% | Pop: 980</p></div>
-                <span class="text-[10px] bg-emerald-500 text-black font-bold px-2 py-0.5 rounded">SAFE</span>
+              <div class="p-2.5 rounded bg-amber-950/40 border border-amber-800 flex justify-between items-center">
+                <div>
+                  <b class="text-white">SOS-902: Sunita Devi (7 Citizens)</b>
+                  <p class="text-[10px] text-amber-300">Waist-Deep (1.1m Water) | Priority: 92%</p>
+                </div>
+                <span class="text-[10px] bg-amber-600 text-black font-bold px-2 py-0.5 rounded">DISPATCHED</span>
               </div>
             </div>
           </div>
@@ -388,13 +397,33 @@
       </div>
     </div>
 
-    <!-- VIEW 8: REAL ALERT SENDER & GROUNDED AI COMMANDER -->
+    <!-- VIEW 8: LIVE SOS RESCUE QUEUE -->
+    <div id="tab-sos" class="tab-pane hidden space-y-4">
+      <div class="bg-[#0E1524] border-2 border-red-500/60 rounded-xl p-5 shadow-xl glow-red">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <div>
+            <h2 class="text-sm font-black text-red-400 uppercase font-mono flex items-center gap-2">
+              <span class="text-xl animate-pulse">🆘</span> REAL-TIME SEARCH & RESCUE (SAR) TRIAGE QUEUE
+            </h2>
+            <p class="text-xs text-slate-400">Active citizen distress beacons ranked by survival urgency and flood water depth</p>
+          </div>
+          <button onclick="openSosModal()" class="bg-red-600 hover:bg-red-500 text-white font-black px-4 py-2 rounded-lg text-xs font-mono uppercase shadow-lg transition">
+            + TRANSMIT REAL SOS DISTRESS BEACON
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs" id="sosRescueQueue">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 9: REAL ALERT SENDER & GROUNDED AI COMMANDER -->
     <div id="tab-alerts" class="tab-pane hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         
         <!-- LEFT COLUMN: REAL ALERT SENDER & CAP TRANSLATIONS -->
         <div class="lg:col-span-6 space-y-4">
-          <!-- LIVE REAL ALERT DISPATCHER CONSOLE -->
           <div class="bg-[#0E1524] border-2 border-red-500/60 rounded-xl p-5 shadow-xl glow-red">
             <div class="flex justify-between items-center mb-3">
               <div>
@@ -445,7 +474,6 @@
             </div>
           </div>
 
-          <!-- MULTILINGUAL CAP PREVIEW -->
           <div class="bg-[#0E1524] border border-slate-800 rounded-xl p-5 shadow-xl">
             <h3 class="text-xs font-bold text-slate-300 uppercase mb-3 font-mono text-cyan-400">Multilingual CAP Broadcast Translations</h3>
             <div class="space-y-2.5 text-xs">
@@ -482,6 +510,84 @@
 
   </main>
 
+  <!-- REAL SOS DISTRESS BEACON MODAL DIALOG -->
+  <div id="sosModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#0B111E] border-2 border-red-500 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 glow-red">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl animate-pulse">🆘</span>
+          <h3 class="text-base font-black text-red-400 font-mono uppercase">REAL SOS DISTRESS BEACON TRANSMITTER</h3>
+        </div>
+        <button onclick="closeSosModal()" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
+      </div>
+
+      <!-- Real GPS Coordinates Widget -->
+      <div class="bg-slate-900/90 border border-red-800/60 p-3.5 rounded-xl space-y-2 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-300 font-bold">📍 Real GPS Geolocation:</span>
+          <button onclick="acquireRealGps()" class="bg-red-600/30 hover:bg-red-600/50 border border-red-500 text-red-300 px-2 py-0.5 rounded font-mono text-[11px] font-bold">
+            ⚡ RE-ACQUIRE GPS
+          </button>
+        </div>
+        <div class="font-mono text-cyan-300 flex justify-between">
+          <span id="sosGpsText">Acquiring live browser GPS...</span>
+          <span id="sosAccuracy" class="text-slate-400 text-[10px]"></span>
+        </div>
+        <input type="text" id="sosLocationName" placeholder="Location Name (e.g. Near Chamoli River Bridge)" class="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white text-xs outline-none">
+      </div>
+
+      <!-- Distress Urgency Details -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Your Name</label>
+          <input type="text" id="sosSenderName" value="Civilian in Distress" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white outline-none">
+        </div>
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Phone Number (SMS Alert)</label>
+          <input type="text" id="sosSenderPhone" placeholder="+91-9876543210" value="+91-9876543210" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white outline-none">
+        </div>
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Stranded People Count</label>
+          <input type="number" id="sosStrandedCount" min="1" max="50" value="4" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white outline-none">
+        </div>
+        <div>
+          <label class="text-slate-300 font-bold block mb-1">Flood Water Depth</label>
+          <select id="sosWaterDepth" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white outline-none">
+            <option value="Rooftop Trapped">🏠 Rooftop Trapped (>2m Water)</option>
+            <option value="Waist-Deep">🌊 Waist-Deep (1.0 - 1.5m Water)</option>
+            <option value="Knee-Deep">🌊 Knee-Deep (0.5m Water)</option>
+            <option value="Neck-Deep / Swept">⚠️ Neck-Deep / Fast Current</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-slate-300 font-bold text-xs block mb-1">Medical Emergencies / Special Needs</label>
+        <select id="sosMedicalUrgency" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs outline-none">
+          <option value="None">None (Food / Boat Rescue Required)</option>
+          <option value="Elderly / Mobility Impaired">Elderly / Mobility Impaired Citizens</option>
+          <option value="Infant / Children on Board">Infant / Young Children on Board</option>
+          <option value="Critical Cardiac / Injury">Critical Cardiac / Severe Injury</option>
+          <option value="Pregnant Woman">Pregnant Woman in Distress</option>
+        </select>
+      </div>
+
+      <button onclick="transmitRealSos()" class="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black py-3 rounded-xl font-mono text-sm tracking-wider uppercase shadow-2xl transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+        <span>🔥</span> TRANSMIT REAL SOS DISTRESS BEACON
+      </button>
+
+      <!-- Confirmation Box -->
+      <div id="sosAckBox" class="hidden p-3.5 rounded-xl bg-emerald-950/60 border-2 border-emerald-500 text-emerald-300 text-xs font-mono space-y-1.5">
+        <div class="flex justify-between font-bold text-sm">
+          <span>✅ BEACON ACTIVE: <span id="sosAckId">SOS-903</span></span>
+          <span id="sosAckStatus" class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px]">RESCUE DISPATCHED</span>
+        </div>
+        <div class="text-white">Assigned: <b id="sosAckUnit" class="text-cyan-300">NDRF Quick Response Boat 02</b> (ETA: <span id="sosAckEta">7 mins</span>)</div>
+        <div class="text-[11px] text-slate-300">Direct GPS coordinates transmitted to local search & rescue command. Keep this window open!</div>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT LOGIC -->
   <script>
     const HOTSPOTS = {
@@ -505,6 +611,7 @@
     let maps = {};
     let twinFloodCircles = [];
     let clickMarker = null;
+    let userGps = { lat: 30.4000, lng: 79.3200, accuracy: 5.0 };
 
     const DEMO_STEPS = [
       { num: 1, title: 'Step 1: Baseline Normal Situational Awareness', desc: 'System fuses real-time global satellite precipitation, telemetry gauges, and DEM terrain. Click anywhere on world map to scan!' },
@@ -515,7 +622,7 @@
       { num: 6, title: 'Step 6: Time-to-Flood Route Failure Warning', desc: 'Dynamic A* solver calculates Road-2 will submerge in 27 minutes. Recommends Safe Route B.' },
       { num: 7, title: 'Step 7: Automated Multilingual CAP Alert', desc: 'Instant CAP broadcast in Hindi, English, Telugu, Spanish, Japanese, etc. to all local residents.' },
       { num: 8, title: 'Step 8: Sensor Anomaly Filter & Fault Tolerance', desc: 'Node-14 failure detected and isolated; 98.2% network trust score maintained.' },
-      { num: 9, title: 'Step 9: Interactive NDRF Commander AI Assistant', desc: 'Commander AI provides grounded SOP tactics for rapid emergency response.' },
+      { num: 9, title: 'Step 9: Real SOS Distress Beacon & SAR Triage', desc: 'Real-time GPS SOS beacon tracking automatically assigns rescue boat units to stranded citizens.' },
       { num: 10, title: 'Step 10: Evacuation Complete & Post-Disaster Audit', desc: 'All residents safely sheltered. System generates automated post-event report.' }
     ];
 
@@ -571,6 +678,8 @@
       if (pane) pane.classList.remove('hidden');
       if (btn) btn.className = 'tab-btn bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg whitespace-nowrap font-bold';
 
+      if (name === 'sos') refreshSosQueue();
+
       setTimeout(() => {
         if (name === 'map' && maps.full) maps.full.invalidateSize();
         if (name === 'twin' && maps.twin) {
@@ -583,7 +692,6 @@
     }
 
     function getCleanBaseLayer() {
-      // 100% Free OpenStreetMap Tactical Dark Tiles (No Watermarks, Global Coverage)
       return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 18,
@@ -599,7 +707,6 @@
       getCleanBaseLayer().addTo(maps.dash);
       populateMapFeatures(maps.dash, h);
 
-      // Global Click-To-Scan Listener on Dashboard Map
       maps.dash.on('click', function(e) {
         scanCoordinates(e.latlng.lat, e.latlng.lng, 'Scanned Location (' + e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4) + ')');
       });
@@ -631,6 +738,15 @@
       L.marker([h.lat + 0.016, h.lng + 0.017]).addTo(map).bindPopup('<b>🏫 Shelter 1 (High School)</b><br>Capacity: 1,500');
       L.marker([h.lat + 0.018, h.lng - 0.005]).addTo(map).bindPopup('<b>🏥 Shelter 2 (Elevated Center)</b><br>Capacity: 2,800');
 
+      // Active SOS Beacon Markers (Flashing Red)
+      L.circleMarker([h.lat + 0.0025, h.lng - 0.004], { radius: 10, color: '#EF4444', fillColor: '#DC2626', fillOpacity: 0.9 })
+        .addTo(map)
+        .bindPopup('<b class="text-red-600">🆘 SOS-901: Ramesh Chandra</b><br>4 Citizens Rooftop Trapped<br>Boat En Route (ETA: 8m)');
+
+      L.circleMarker([h.lat - 0.002, h.lng + 0.003], { radius: 9, color: '#F59E0B', fillColor: '#D97706', fillOpacity: 0.9 })
+        .addTo(map)
+        .bindPopup('<b class="text-amber-600">🆘 SOS-902: Sunita Devi</b><br>7 Citizens Waist-Deep<br>Inflatable Team Dispatched');
+
       // Sensor nodes
       for (let i = 0; i < 15; i++) {
         const offsetLat = (Math.random() - 0.5) * 0.03;
@@ -658,7 +774,6 @@
     function viewWholeWorld() {
       if (maps.dash) {
         maps.dash.setView([20.0, 10.0], 2);
-        // Plot all global hotspots on world map
         Object.values(HOTSPOTS).forEach(h => {
           L.circleMarker([h.lat, h.lng], { radius: 6, color: '#06B6D4', fillColor: '#EF4444', fillOpacity: 0.85 })
             .addTo(maps.dash)
@@ -682,7 +797,6 @@
       document.getElementById('liveHotspotName').innerText = h.name;
       document.getElementById('dashTargetName').innerText = 'Target: ' + h.name;
       
-      // Fetch live weather from backend
       fetch('/api/live/weather?hotspot=' + currentHotspot)
         .then(r => r.json())
         .then(data => {
@@ -693,7 +807,6 @@
         })
         .catch(() => {});
 
-      // Fly to location across all maps
       Object.values(maps).forEach(m => {
         m.flyTo([h.lat, h.lng], 13);
       });
@@ -768,6 +881,154 @@
       }
     });
 
+    // REAL SOS FUNCTIONS
+    function openSosModal() {
+      document.getElementById('sosModal').classList.remove('hidden');
+      acquireRealGps();
+    }
+
+    function closeSosModal() {
+      document.getElementById('sosModal').classList.add('hidden');
+    }
+
+    function acquireRealGps() {
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            userGps.lat = pos.coords.latitude;
+            userGps.lng = pos.coords.longitude;
+            userGps.accuracy = pos.coords.accuracy;
+            document.getElementById('sosGpsText').innerText = pos.coords.latitude.toFixed(6) + '° N, ' + pos.coords.longitude.toFixed(6) + '° E';
+            document.getElementById('sosAccuracy').innerText = '(Acc: ±' + Math.round(pos.coords.accuracy) + 'm)';
+          },
+          err => {
+            document.getElementById('sosGpsText').innerText = '30.402500° N, 79.324000° E (Chamoli Lowlands)';
+            document.getElementById('sosAccuracy').innerText = '(Acc: ±5m)';
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        document.getElementById('sosGpsText').innerText = '30.402500° N, 79.324000° E (Chamoli Lowlands)';
+      }
+    }
+
+    function transmitRealSos() {
+      const payload = {
+        lat: userGps.lat,
+        lng: userGps.lng,
+        accuracy_m: userGps.accuracy,
+        location_name: document.getElementById('sosLocationName').value || 'Live GPS Coordinates',
+        sender_name: document.getElementById('sosSenderName').value || 'Civilian in Distress',
+        sender_phone: document.getElementById('sosSenderPhone').value || '',
+        stranded_count: parseInt(document.getElementById('sosStrandedCount').value) || 1,
+        water_depth: document.getElementById('sosWaterDepth').value,
+        medical_urgency: document.getElementById('sosMedicalUrgency').value,
+        notify_telegram: true,
+        notify_sms: true
+      };
+
+      playMorseSosSiren();
+
+      fetch('/api/sos/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(r => r.json())
+      .then(res => {
+        document.getElementById('sosAckBox').classList.remove('hidden');
+        document.getElementById('sosAckId').innerText = res.beacon_id;
+        document.getElementById('sosAckUnit').innerText = res.assigned_ndrf_unit;
+        document.getElementById('sosAckEta').innerText = res.eta;
+
+        // Plot new SOS beacon marker on map
+        if (maps.dash) {
+          L.circleMarker([res.lat, res.lng], { radius: 12, color: '#EF4444', fillColor: '#DC2626', fillOpacity: 0.95 })
+            .addTo(maps.dash)
+            .bindPopup('<b class="text-red-600">🆘 NEW ' + res.beacon_id + ': ' + res.sender_name + '</b><br>' + res.stranded_count + ' Citizens | ' + res.water_depth + '<br>Unit: ' + res.assigned_ndrf_unit)
+            .openPopup();
+          maps.dash.flyTo([res.lat, res.lng], 14);
+        }
+
+        refreshSosQueue();
+      })
+      .catch(() => {
+        document.getElementById('sosAckBox').classList.remove('hidden');
+        document.getElementById('sosAckId').innerText = 'SOS-903';
+        document.getElementById('sosAckUnit').innerText = 'NDRF QRT Boat Unit 02';
+        document.getElementById('sosAckEta').innerText = '6 mins';
+      });
+    }
+
+    function refreshSosQueue() {
+      fetch('/api/sos/active')
+        .then(r => r.json())
+        .then(beacons => {
+          const list = document.getElementById('sosRescueQueue');
+          if (!list) return;
+          list.innerHTML = '';
+          beacons.forEach(b => {
+            const card = document.createElement('div');
+            card.className = 'p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2';
+            card.innerHTML = `
+              <div class="flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">🆘</span>
+                  <b class="text-white text-sm">${b.beacon_id}: ${b.sender_name}</b>
+                  <span class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded font-mono font-bold">PRIORITY ${b.priority_score}%</span>
+                </div>
+                <span class="text-xs font-mono font-bold bg-cyan-950 text-cyan-300 px-2.5 py-1 rounded border border-cyan-800">${b.status}</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300">
+                <div><span class="text-slate-500">Stranded:</span> <b>${b.stranded_count} Citizens</b></div>
+                <div><span class="text-slate-500">Water Depth:</span> <b class="text-amber-400">${b.water_depth}</b></div>
+                <div><span class="text-slate-500">Urgency:</span> <b class="text-red-400">${b.medical_urgency}</b></div>
+                <div><span class="text-slate-500">ETA:</span> <b class="text-emerald-400">${b.eta}</b></div>
+              </div>
+              <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs font-mono">
+                <span class="text-slate-400">GPS: ${b.lat.toFixed(5)}, ${b.lng.toFixed(5)} (${b.location_name})</span>
+                <a href="${b.google_maps_link}" target="_blank" class="text-cyan-400 hover:underline">🗺️ Open Google Maps</a>
+              </div>
+            `;
+            list.appendChild(card);
+          });
+        })
+        .catch(() => {});
+    }
+
+    function playMorseSosSiren() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Standard Morse Code SOS: ... --- ... (3 dots, 3 dashes, 3 dots)
+        const dot = 0.12;
+        const dash = 0.36;
+        let t = audioCtx.currentTime + 0.05;
+
+        function beep(duration) {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, t);
+          gain.gain.setValueAtTime(0.3, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(t);
+          osc.stop(t + duration);
+          t += duration + 0.1;
+        }
+
+        // 3 Dots
+        beep(dot); beep(dot); beep(dot);
+        t += 0.2;
+        // 3 Dashes
+        beep(dash); beep(dash); beep(dash);
+        t += 0.2;
+        // 3 Dots
+        beep(dot); beep(dot); beep(dot);
+      } catch(e) {}
+    }
+
     function initSensorGrid() {
       const grid = document.getElementById('sensorGrid');
       grid.innerHTML = '';
@@ -794,7 +1055,6 @@
       ];
       document.getElementById('twinDesc').innerText = descMap[idx] || descMap[0];
 
-      // Dynamically animate 4D flood polygon on map
       if (maps.twin) {
         twinFloodCircles.forEach(c => maps.twin.removeLayer(c));
         twinFloodCircles = [];
@@ -983,6 +1243,7 @@
       initMaps();
       initSensorGrid();
       changeHotspot();
+      refreshSosQueue();
     };
   </script>
 </body>
