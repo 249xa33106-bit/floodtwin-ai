@@ -71,3 +71,18 @@ def test_demo_step_progression():
     res = client.post("/api/demo/set-step/4")
     assert res.status_code == 200
     assert res.json()["step"] == 4
+
+def test_real_alert_sender():
+    res = client.post("/api/alerts/send-real", json={
+        "channel": "sms",
+        "recipient": "9876543210",
+        "message": "Emergency test alert from FloodTwin AI",
+        "target_zone": "Zone B",
+        "urgency": "Immediate"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "dispatch_id" in data
+    assert data["channel"] == "SMS"
+    assert data["status"] in ["DELIVERED", "SENT_WITH_FALLBACK"]
+
