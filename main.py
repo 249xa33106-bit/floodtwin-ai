@@ -181,6 +181,23 @@ def trigger_alert_broadcast(level: int = Body(3), target_zone: str = Body("Zone 
 def get_alert_history():
     return alerts_engine.get_alert_history()
 
+class RealAlertInput(BaseModel):
+    channel: str = "telegram" # 'telegram', 'webhook', 'sms', 'email'
+    recipient: str
+    message: str
+    target_zone: Optional[str] = "Zone B Lowlands"
+    urgency: Optional[str] = "Immediate"
+
+@app.post("/api/alerts/send-real")
+def send_real_alert(data: RealAlertInput):
+    return alerts_engine.send_real_alert(
+        channel=data.channel,
+        recipient=data.recipient,
+        message=data.message,
+        target_zone=data.target_zone or "Zone B Lowlands",
+        urgency=data.urgency or "Immediate"
+    )
+
 @app.post("/api/demo/set-step/{step_id}")
 def set_demo_step(step_id: int):
     if step_id < 1 or step_id > 10:
