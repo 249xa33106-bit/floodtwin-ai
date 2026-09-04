@@ -1,4 +1,4 @@
-﻿from typing import Dict, Any, List
+from typing import Dict, Any, List
 
 class IncidentCommanderAI:
     def __init__(self):
