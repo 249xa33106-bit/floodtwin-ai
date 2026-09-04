@@ -13,6 +13,7 @@ from evacuation import EvacuationRoutingEngine
 from commander_ai import IncidentCommanderAI
 from alerts_engine import EmergencyAlertsEngine
 from demo_scenarios import DemoScenariosEngine
+from live_data import LiveDataIngestionEngine
 
 app = FastAPI(
     title="FloodTwin AI — Decision Support Platform for NDRF",
@@ -37,6 +38,7 @@ evac_engine = EvacuationRoutingEngine()
 commander_ai = IncidentCommanderAI()
 alerts_engine = EmergencyAlertsEngine()
 demo_engine = DemoScenariosEngine()
+live_engine = LiveDataIngestionEngine()
 
 class TelemetryInput(BaseModel):
     rain_intensity: Optional[float] = 47.0
@@ -188,6 +190,52 @@ def set_demo_step(step_id: int):
 @app.get("/api/demo/current")
 def get_demo_step():
     return demo_engine.get_current_state()
+
+
+class WhatIfSimulationInput(BaseModel):
+    hotspot_id: Optional[str] = "chamoli"
+    simulated_rain_surge_mmh: Optional[float] = 52.0
+    soil_saturation_override_pct: Optional[float] = 91.0
+    river_stage_surge_m: Optional[float] = 4.22
+    water_rise_velocity_cm10m: Optional[float] = 51.0
+
+@app.get("/api/live/hotspots")
+def get_live_hotspots():
+    return live_engine.get_all_hotspots()
+
+@app.get("/api/live/weather")
+def get_live_weather(hotspot: str = Query("chamoli")):
+    return live_engine.fetch_live_hotspot_weather(hotspot)
+
+@app.post("/api/simulator/what-if")
+def run_what_if_simulation(data: WhatIfSimulationInput):
+    # Compute live combined risk based on what-if surge parameters
+    features = {
+        "rain_intensity": data.simulated_rain_surge_mmh,
+        "rain_30min": data.simulated_rain_surge_mmh * 0.5,
+        "rain_1h": data.simulated_rain_surge_mmh,
+        "rain_3h": data.simulated_rain_surge_mmh * 2.1,
+        "rain_6h": data.simulated_rain_surge_mmh * 2.8,
+        "rain_24h": data.simulated_rain_surge_mmh * 3.8,
+        "forecast_rain_1h": data.simulated_rain_surge_mmh * 1.15,
+        "soil_moisture": data.soil_saturation_override_pct,
+        "river_level": data.river_stage_surge_m,
+        "water_level_rise_10m": data.water_rise_velocity_cm10m,
+        "water_level_acceleration": round(data.water_rise_velocity_cm10m * 0.15, 2),
+        "elevation": 1480.0,
+        "slope": 28.0,
+        "distance_from_river": 60.0
+    }
+    prediction = ml_engine.predict(features)
+    routes = evac_engine.calculate_evacuation_routes("Zone-B-Center", data.simulated_rain_surge_mmh, data.river_stage_surge_m)
+    twin = twin_engine.simulate_timesteps(data.simulated_rain_surge_mmh, data.river_stage_surge_m, data.soil_saturation_override_pct)
+    
+    return {
+        "simulation_parameters": data.dict(),
+        "prediction": prediction,
+        "digital_twin": twin,
+        "evacuation": routes
+    }
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
