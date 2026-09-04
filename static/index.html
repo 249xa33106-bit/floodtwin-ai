@@ -186,7 +186,7 @@
             </span>
             <span class="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">CLICK-TO-SCAN ACTIVE</span>
           </div>
-          <div id="mapDash" class="w-full h-[480px] rounded-lg"></div>
+          <div id="mapDash" style="height: 480px; width: 100%; min-height: 480px; background: #0B111E; position: relative; z-index: 1;" class="w-full rounded-lg"></div>
         </div>
 
         <div class="lg:col-span-4 space-y-3">
@@ -238,7 +238,7 @@
             <p class="text-xs text-slate-400">Physics cellular automata runoff overlay + telemetry IoT sensor nodes</p>
           </div>
         </div>
-        <div id="mapFull" class="w-full h-[620px] rounded-lg"></div>
+        <div id="mapFull" style="height: 620px; width: 100%; min-height: 620px; background: #0B111E; position: relative; z-index: 1;" class="w-full rounded-lg"></div>
       </div>
     </div>
 
@@ -303,7 +303,7 @@
             <button onclick="setTwinStep(4)" id="t4" class="twin-btn bg-slate-800 text-slate-300 px-2.5 py-1 rounded font-bold">+120m</button>
           </div>
         </div>
-        <div id="mapTwin" class="w-full h-[520px] rounded-lg"></div>
+        <div id="mapTwin" style="height: 520px; width: 100%; min-height: 520px; background: #0B111E; position: relative; z-index: 1;" class="w-full rounded-lg"></div>
         <div class="mt-3 p-3 bg-slate-900 rounded-lg border border-slate-800 flex justify-between items-center text-xs">
           <div><b class="text-cyan-400">Forecast Stage: </b><span id="twinDesc">Current Water Surface Elevation: 4.22m. Inundation contained to river banks.</span></div>
           <div class="text-slate-400 font-mono">Validation: <span class="text-emerald-400">Sentinel-1 SAR 96.4% Fit</span></div>
@@ -319,7 +319,7 @@
             <span class="text-xs font-bold text-slate-300 uppercase">TIME-TO-FLOOD DYNAMIC ROUTE MAP</span>
             <span class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">A* GRAPH SOLVER</span>
           </div>
-          <div id="mapEvac" class="w-full h-[520px] rounded-lg"></div>
+          <div id="mapEvac" style="height: 520px; width: 100%; min-height: 520px; background: #0B111E; position: relative; z-index: 1;" class="w-full rounded-lg"></div>
         </div>
 
         <div class="lg:col-span-4 space-y-3">
@@ -706,8 +706,8 @@
     }
 
     function getCleanBaseLayer() {
-      return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 19
       });
