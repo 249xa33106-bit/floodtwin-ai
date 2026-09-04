@@ -684,147 +684,174 @@
     }
 
     function setTab(name) {
-      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(el => {
-        el.className = 'tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap';
-      });
-      
-      const pane = document.getElementById('tab-' + name);
-      const btn = document.getElementById('btn-' + name);
-      if (pane) pane.classList.remove('hidden');
-      if (btn) btn.className = 'tab-btn bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg whitespace-nowrap font-bold';
+      try {
+        document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => {
+          el.className = 'tab-btn text-slate-400 px-3 py-1.5 rounded-lg whitespace-nowrap transition hover:text-white';
+        });
+        
+        const pane = document.getElementById('tab-' + name);
+        const btn = document.getElementById('btn-' + name);
+        if (pane) pane.classList.remove('hidden');
+        if (btn) btn.className = 'tab-btn bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3 py-1.5 rounded-lg whitespace-nowrap font-bold shadow-lg';
 
-      if (name === 'sos') refreshSosQueue();
+        if (name === 'sos') refreshSosQueue();
 
-      setTimeout(() => {
-        if (name === 'map' && maps.full) maps.full.invalidateSize();
-        if (name === 'twin' && maps.twin) {
-          maps.twin.invalidateSize();
-          setTwinStep(0);
-        }
-        if (name === 'evac' && maps.evac) maps.evac.invalidateSize();
-        if (name === 'dash' && maps.dash) maps.dash.invalidateSize();
-      }, 200);
+        setTimeout(() => {
+          ensureMap(name);
+        }, 100);
+      } catch (err) {
+        console.error('Error switching tab:', err);
+      }
     }
 
     function getCleanBaseLayer() {
       return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 19
       });
     }
 
-    function initMaps() {
-      const h = HOTSPOTS[currentHotspot];
-
-      // Dashboard Map
-      maps.dash = L.map('mapDash').setView([h.lat, h.lng], 13);
-      getCleanBaseLayer().addTo(maps.dash);
-      populateMapFeatures(maps.dash, h);
-
-      maps.dash.on('click', function(e) {
-        scanCoordinates(e.latlng.lat, e.latlng.lng, 'Scanned Location (' + e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4) + ')');
-      });
-
-      // Full Grid Map
-      maps.full = L.map('mapFull').setView([h.lat, h.lng], 13);
-      getCleanBaseLayer().addTo(maps.full);
-      populateMapFeatures(maps.full, h);
-
-      // Twin Map
-      maps.twin = L.map('mapTwin').setView([h.lat, h.lng], 13);
-      getCleanBaseLayer().addTo(maps.twin);
-      populateMapFeatures(maps.twin, h);
-
-      // Evac Map
-      maps.evac = L.map('mapEvac').setView([h.lat, h.lng], 13);
-      getCleanBaseLayer().addTo(maps.evac);
-      populateMapFeatures(maps.evac, h);
-      drawEvacRoutes(maps.evac, h);
-    }
-
-    function populateMapFeatures(map, h) {
-      // Flood Inundation Zones
-      L.circle([h.lat + 0.006, h.lng - 0.008], { radius: 600, color: '#EF4444', fillColor: '#EF4444', fillOpacity: 0.35 }).addTo(map).bindPopup('<b>Zone B: Lowland Sector</b><br>Risk: 91.4% (CRITICAL)');
-      L.circle([h.lat - 0.007, h.lng + 0.009], { radius: 500, color: '#F59E0B', fillColor: '#F59E0B', fillOpacity: 0.25 }).addTo(map).bindPopup('<b>Zone C: Valley Sector</b><br>Risk: 72.8% (HIGH)');
-      L.circle([h.lat + 0.015, h.lng + 0.015], { radius: 450, color: '#10B981', fillColor: '#10B981', fillOpacity: 0.25 }).addTo(map).bindPopup('<b>Zone A: Highland Ridge</b><br>Risk: 18.2% (SAFE)');
-
-      // Shelters
-      L.marker([h.lat + 0.016, h.lng + 0.017]).addTo(map).bindPopup('<b>🏫 Shelter 1 (High School)</b><br>Capacity: 1,500');
-      L.marker([h.lat + 0.018, h.lng - 0.005]).addTo(map).bindPopup('<b>🏥 Shelter 2 (Elevated Center)</b><br>Capacity: 2,800');
-
-      // Active SOS Beacon Markers (Flashing Red)
-      L.circleMarker([h.lat + 0.0025, h.lng - 0.004], { radius: 10, color: '#EF4444', fillColor: '#DC2626', fillOpacity: 0.9 })
-        .addTo(map)
-        .bindPopup('<b class="text-red-600">🆘 SOS-901: Ramesh Chandra</b><br>4 Citizens Rooftop Trapped<br>Boat En Route (ETA: 8m)');
-
-      L.circleMarker([h.lat - 0.002, h.lng + 0.003], { radius: 9, color: '#F59E0B', fillColor: '#D97706', fillOpacity: 0.9 })
-        .addTo(map)
-        .bindPopup('<b class="text-amber-600">🆘 SOS-902: Sunita Devi</b><br>7 Citizens Waist-Deep<br>Inflatable Team Dispatched');
-
-      // Sensor nodes
-      for (let i = 0; i < 15; i++) {
-        const offsetLat = (Math.random() - 0.5) * 0.03;
-        const offsetLng = (Math.random() - 0.5) * 0.03;
-        L.circleMarker([h.lat + offsetLat, h.lng + offsetLng], { radius: 4, color: '#06B6D4', fillColor: '#06B6D4', fillOpacity: 0.85 }).addTo(map);
+    function ensureMap(name) {
+      const h = HOTSPOTS[currentHotspot] || HOTSPOTS['chamoli'];
+      try {
+        if (name === 'dash') {
+          if (!maps.dash) {
+            maps.dash = L.map('mapDash').setView([h.lat, h.lng], 13);
+            getCleanBaseLayer().addTo(maps.dash);
+            populateMapFeatures(maps.dash, h);
+            maps.dash.on('click', function(e) {
+              scanCoordinates(e.latlng.lat, e.latlng.lng, 'Scanned Location (' + e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4) + ')');
+            });
+          }
+          maps.dash.invalidateSize();
+        } else if (name === 'map') {
+          if (!maps.full) {
+            maps.full = L.map('mapFull').setView([h.lat, h.lng], 13);
+            getCleanBaseLayer().addTo(maps.full);
+            populateMapFeatures(maps.full, h);
+          }
+          maps.full.invalidateSize();
+        } else if (name === 'twin') {
+          if (!maps.twin) {
+            maps.twin = L.map('mapTwin').setView([h.lat, h.lng], 13);
+            getCleanBaseLayer().addTo(maps.twin);
+            populateMapFeatures(maps.twin, h);
+          }
+          maps.twin.invalidateSize();
+          setTwinStep(0);
+        } else if (name === 'evac') {
+          if (!maps.evac) {
+            maps.evac = L.map('mapEvac').setView([h.lat, h.lng], 13);
+            getCleanBaseLayer().addTo(maps.evac);
+            populateMapFeatures(maps.evac, h);
+            drawEvacRoutes(maps.evac, h);
+          }
+          maps.evac.invalidateSize();
+        }
+      } catch (e) {
+        console.warn('Map setup notice:', e);
       }
     }
 
-    function drawEvacRoutes(map, h) {
-      const safeCoords = [
-        [h.lat + 0.006, h.lng - 0.008],
-        [h.lat + 0.012, h.lng - 0.006],
-        [h.lat + 0.018, h.lng - 0.005]
-      ];
-      L.polyline(safeCoords, { color: '#10B981', weight: 6, opacity: 0.9 }).addTo(map).bindPopup('<b>✅ Safe Route B (Recommended)</b><br>Travel time: 12 min');
+    function initMaps() {
+      ensureMap('dash');
+    }
 
-      const floodedCoords = [
-        [h.lat + 0.006, h.lng - 0.008],
-        [h.lat + 0.002, h.lng + 0.004],
-        [h.lat - 0.007, h.lng + 0.009]
-      ];
-      L.polyline(floodedCoords, { color: '#EF4444', weight: 5, dashArray: '8, 8', opacity: 0.85 }).addTo(map).bindPopup('<b>❌ Road 2 (FAILING)</b><br>Submerges in 27 min!');
+    function populateMapFeatures(map, h) {
+      try {
+        // Flood Inundation Zones
+        L.circle([h.lat + 0.006, h.lng - 0.008], { radius: 600, color: '#EF4444', fillColor: '#EF4444', fillOpacity: 0.35 }).addTo(map).bindPopup('<b>Zone B: Lowland Sector</b><br>Risk: 91.4% (CRITICAL)');
+        L.circle([h.lat - 0.007, h.lng + 0.009], { radius: 500, color: '#F59E0B', fillColor: '#F59E0B', fillOpacity: 0.25 }).addTo(map).bindPopup('<b>Zone C: Valley Sector</b><br>Risk: 72.8% (HIGH)');
+        L.circle([h.lat + 0.015, h.lng + 0.015], { radius: 450, color: '#10B981', fillColor: '#10B981', fillOpacity: 0.25 }).addTo(map).bindPopup('<b>Zone A: Highland Ridge</b><br>Risk: 18.2% (SAFE)');
+
+        // Shelters
+        L.marker([h.lat + 0.016, h.lng + 0.017]).addTo(map).bindPopup('<b>🏫 Shelter 1 (High School)</b><br>Capacity: 1,500');
+        L.marker([h.lat + 0.018, h.lng - 0.005]).addTo(map).bindPopup('<b>🏥 Shelter 2 (Elevated Center)</b><br>Capacity: 2,800');
+
+        // Active SOS Beacon Markers (Flashing Red)
+        L.circleMarker([h.lat + 0.0025, h.lng - 0.004], { radius: 10, color: '#EF4444', fillColor: '#DC2626', fillOpacity: 0.9 })
+          .addTo(map)
+          .bindPopup('<b class="text-red-600">🆘 SOS-901: Ramesh Chandra</b><br>4 Citizens Rooftop Trapped<br>Boat En Route (ETA: 8m)');
+
+        L.circleMarker([h.lat - 0.002, h.lng + 0.003], { radius: 9, color: '#F59E0B', fillColor: '#D97706', fillOpacity: 0.9 })
+          .addTo(map)
+          .bindPopup('<b class="text-amber-600">🆘 SOS-902: Sunita Devi</b><br>7 Citizens Waist-Deep<br>Inflatable Team Dispatched');
+
+        // Sensor nodes
+        for (let i = 0; i < 15; i++) {
+          const offsetLat = (Math.random() - 0.5) * 0.03;
+          const offsetLng = (Math.random() - 0.5) * 0.03;
+          L.circleMarker([h.lat + offsetLat, h.lng + offsetLng], { radius: 4, color: '#06B6D4', fillColor: '#06B6D4', fillOpacity: 0.85 }).addTo(map);
+        }
+      } catch(e) {}
+    }
+
+    function drawEvacRoutes(map, h) {
+      try {
+        const safeCoords = [
+          [h.lat + 0.006, h.lng - 0.008],
+          [h.lat + 0.012, h.lng - 0.006],
+          [h.lat + 0.018, h.lng - 0.005]
+        ];
+        L.polyline(safeCoords, { color: '#10B981', weight: 6, opacity: 0.9 }).addTo(map).bindPopup('<b>✅ Safe Route B (Recommended)</b><br>Travel time: 12 min');
+
+        const floodedCoords = [
+          [h.lat + 0.006, h.lng - 0.008],
+          [h.lat + 0.002, h.lng + 0.004],
+          [h.lat - 0.007, h.lng + 0.009]
+        ];
+        L.polyline(floodedCoords, { color: '#EF4444', weight: 5, dashArray: '8, 8', opacity: 0.85 }).addTo(map).bindPopup('<b>❌ Road 2 (FAILING)</b><br>Submerges in 27 min!');
+      } catch(e) {}
     }
 
     function viewWholeWorld() {
       if (maps.dash) {
         maps.dash.setView([20.0, 10.0], 2);
-        Object.values(HOTSPOTS).forEach(h => {
+        Object.keys(HOTSPOTS).forEach(k => {
+          const h = HOTSPOTS[k];
           L.circleMarker([h.lat, h.lng], { radius: 6, color: '#06B6D4', fillColor: '#EF4444', fillOpacity: 0.85 })
             .addTo(maps.dash)
-            .bindPopup('<b>🌍 ' + h.name + '</b><br><button onclick="selectHotspotByName('' + h.name + '')" class="bg-cyan-600 text-white px-2 py-0.5 rounded text-xs mt-1">Scan Hotspot</button>');
+            .bindPopup('<b>🌍 ' + h.name + '</b><br><button onclick="selectHotspotByName(\'' + k + '\')" class="bg-cyan-600 text-white px-2 py-0.5 rounded text-xs mt-1">Scan Hotspot</button>');
         });
       }
     }
 
-    function selectHotspotByName(name) {
-      const foundKey = Object.keys(HOTSPOTS).find(k => HOTSPOTS[k].name === name);
-      if (foundKey) {
-        document.getElementById('hotspotSelect').value = foundKey;
+    function selectHotspotByName(key) {
+      const sel = document.getElementById('hotspotSelect');
+      if (sel) {
+        sel.value = key;
         changeHotspot();
       }
     }
 
     function changeHotspot() {
       const select = document.getElementById('hotspotSelect');
-      currentHotspot = select.value;
+      currentHotspot = select ? select.value : 'chamoli';
       const h = HOTSPOTS[currentHotspot] || HOTSPOTS['chamoli'];
-      document.getElementById('liveHotspotName').innerText = h.name;
-      document.getElementById('dashTargetName').innerText = 'Target: ' + h.name;
+      
+      const elName = document.getElementById('liveHotspotName');
+      if (elName) elName.innerText = h.name;
+      const elTarget = document.getElementById('dashTargetName');
+      if (elTarget) elTarget.innerText = 'Target: ' + h.name;
       
       fetch('/api/live/weather?hotspot=' + currentHotspot)
         .then(r => r.json())
         .then(data => {
           if (data) {
-            document.getElementById('liveTemp').innerText = (data.temperature_c || 22.0) + '°C';
-            document.getElementById('livePrecip').innerText = (data.live_rain_intensity_mmh || 0.0) + ' mm/h';
+            const t = document.getElementById('liveTemp');
+            const p = document.getElementById('livePrecip');
+            if (t) t.innerText = (data.temperature_c || 22.0) + '°C';
+            if (p) p.innerText = (data.live_rain_intensity_mmh || 0.0) + ' mm/h';
           }
         })
         .catch(() => {});
 
       Object.values(maps).forEach(m => {
-        m.flyTo([h.lat, h.lng], 13);
+        try {
+          if (m && m._loaded) m.flyTo([h.lat, h.lng], 13);
+        } catch(e) {}
       });
     }
 
