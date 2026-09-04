@@ -22,7 +22,7 @@
       100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
     .dark-map-tiles {
-      filter: brightness(0.75) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.8);
+      /* Native CartoDB dark tiles used */
     }
   </style>
 </head>
@@ -708,10 +708,10 @@
     }
 
     function getCleanBaseLayer() {
-      return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 18,
-        className: 'dark-map-tiles'
+      return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
       });
     }
 
@@ -861,7 +861,7 @@
       if (!q) return;
 
       const resBox = document.getElementById('searchResults');
-      resBox.innerHTML = '<div class="p-2 text-slate-400 text-xs font-mono">Searching global satellites...</div>';
+      resBox.innerHTML = '<div class="p-2 text-slate-400 text-xs font-mono animate-pulse">🛰️ Searching global satellites for "' + q + '"...</div>';
       resBox.classList.remove('hidden');
 
       fetch('/api/global/search?q=' + encodeURIComponent(q))
@@ -869,23 +869,35 @@
         .then(results => {
           resBox.innerHTML = '';
           if (!results || results.length === 0) {
-            resBox.innerHTML = '<div class="p-2 text-slate-400 text-xs">No global cities found. Try another city name.</div>';
+            resBox.innerHTML = '<div class="p-2 text-amber-400 text-xs">No city found for "' + q + '". Try another name or click on the map.</div>';
             return;
           }
+
+          // Auto-navigate immediately to the top matching city
+          const top = results[0];
+          if (maps.dash) {
+            maps.dash.invalidateSize();
+            maps.dash.flyTo([top.lat, top.lng], 13);
+          }
+          scanCoordinates(top.lat, top.lng, top.name);
+
           results.forEach(item => {
             const row = document.createElement('div');
             row.className = 'p-2.5 hover:bg-slate-800 cursor-pointer border-b border-slate-800 text-xs text-slate-200 transition flex items-center justify-between';
             row.innerHTML = '<div><b class="text-cyan-300">' + item.name.split(',')[0] + '</b><p class="text-[10px] text-slate-400 truncate max-w-[200px]">' + item.name + '</p></div><span class="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded font-mono">SCAN</span>';
             row.onclick = () => {
               resBox.classList.add('hidden');
-              maps.dash.flyTo([item.lat, item.lng], 13);
+              if (maps.dash) {
+                maps.dash.invalidateSize();
+                maps.dash.flyTo([item.lat, item.lng], 13);
+              }
               scanCoordinates(item.lat, item.lng, item.name);
             };
             resBox.appendChild(row);
           });
         })
         .catch(() => {
-          resBox.classList.add('hidden');
+          resBox.innerHTML = '<div class="p-2 text-red-400 text-xs font-mono">Search offline. Please click directly on the map.</div>';
         });
     }
 
@@ -1273,6 +1285,9 @@
       initSensorGrid();
       changeHotspot();
       refreshSosQueue();
+      setTimeout(() => {
+        if (maps.dash) maps.dash.invalidateSize();
+      }, 300);
     };
   </script>
 </body>
