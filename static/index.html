@@ -864,22 +864,35 @@
       if (clickMarker && maps.dash) maps.dash.removeLayer(clickMarker);
       clickMarker = L.marker([lat, lng]).addTo(maps.dash).bindPopup('<b>📍 ' + name + '</b><br>Fetching live NASA satellite telemetry...').openPopup();
 
-      document.getElementById('liveHotspotName').innerText = name;
+      const displayName = name || ('Location (' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ')');
+      const elLive = document.getElementById('liveHotspotName');
+      if (elLive) elLive.innerText = displayName;
+      const elTarget = document.getElementById('dashTargetName');
+      if (elTarget) elTarget.innerText = 'Target: ' + displayName;
+      const elEvac = document.getElementById('evacTargetZone');
+      if (elEvac) elEvac.innerText = displayName.split(',')[0];
 
       fetch('/api/global/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: lat, lng: lng, location_name: name })
+        body: JSON.stringify({ lat: lat, lng: lng, location_name: displayName })
       })
       .then(r => r.json())
       .then(res => {
         const p = res.prediction;
         const w = res.weather;
+        const loc = res.location || {};
+        const finalName = loc.name || displayName;
+        
+        if (elLive) elLive.innerText = finalName;
+        if (elTarget) elTarget.innerText = 'Target: ' + finalName;
+        if (elEvac) elEvac.innerText = finalName.split(',')[0];
+
         document.getElementById('dashCrit').innerText = p.risk_score + '%';
         document.getElementById('dashLevelBadge').innerText = p.risk_level;
         document.getElementById('liveTemp').innerText = (w.temperature_c || 22.0) + '°C';
         document.getElementById('livePrecip').innerText = (w.live_rain_intensity_mmh || 0.0) + ' mm/h';
-        clickMarker.bindPopup('<b>📍 ' + name + '</b><br>Risk: <b>' + p.risk_score + '% (' + p.risk_level + ')</b><br>Live Rain: ' + w.live_rain_intensity_mmh + ' mm/h').openPopup();
+        clickMarker.bindPopup('<b>📍 ' + finalName + '</b><br>Risk: <b>' + p.risk_score + '% (' + p.risk_level + ')</b><br>Live Rain: ' + w.live_rain_intensity_mmh + ' mm/h').openPopup();
       })
       .catch(() => {});
     }
