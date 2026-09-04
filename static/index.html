@@ -576,14 +576,30 @@
         <span>🔥</span> TRANSMIT REAL SOS DISTRESS BEACON
       </button>
 
-      <!-- Confirmation Box -->
-      <div id="sosAckBox" class="hidden p-3.5 rounded-xl bg-emerald-950/60 border-2 border-emerald-500 text-emerald-300 text-xs font-mono space-y-1.5">
+      <!-- Confirmation Box & Mobile Delivery Actions -->
+      <div id="sosAckBox" class="hidden p-3.5 rounded-xl bg-emerald-950/70 border-2 border-emerald-500 text-emerald-300 text-xs font-mono space-y-2.5">
         <div class="flex justify-between font-bold text-sm">
           <span>✅ BEACON ACTIVE: <span id="sosAckId">SOS-903</span></span>
           <span id="sosAckStatus" class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px]">RESCUE DISPATCHED</span>
         </div>
         <div class="text-white">Assigned: <b id="sosAckUnit" class="text-cyan-300">NDRF Quick Response Boat 02</b> (ETA: <span id="sosAckEta">7 mins</span>)</div>
-        <div class="text-[11px] text-slate-300">Direct GPS coordinates transmitted to local search & rescue command. Keep this window open!</div>
+        <div class="text-[11px] text-slate-300">Direct GPS coordinates logged in Central EOC & NDRF Dispatch Queue.</div>
+        
+        <!-- Instant Mobile Share Links -->
+        <div class="pt-2 border-t border-emerald-800/80 space-y-1.5">
+          <div class="text-[11px] font-bold text-yellow-300 flex items-center gap-1.5">
+            <span>📲</span> Direct Mobile Delivery (Instant One-Tap):
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <a id="sosWaLink" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold text-center flex items-center justify-center gap-1.5 no-underline shadow">
+              <span>💬</span> Send via WhatsApp
+            </a>
+            <a id="sosSmsLink" href="#" class="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-2 rounded-lg font-bold text-center flex items-center justify-center gap-1.5 no-underline shadow">
+              <span>📱</span> Send Native Mobile SMS
+            </a>
+          </div>
+          <div class="text-[10px] text-slate-400">Tapping either button opens your mobile phone's WhatsApp or SMS messenger with pre-filled GPS distress coordinates ready to send to 112 / Family.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -941,6 +957,13 @@
         document.getElementById('sosAckUnit').innerText = res.assigned_ndrf_unit;
         document.getElementById('sosAckEta').innerText = res.eta;
 
+        const mapsLink = res.google_maps_link || ('https://maps.google.com/?q=' + res.lat + ',' + res.lng);
+        const sosText = '🚨 EMERGENCY FLASH FLOOD SOS: ' + res.sender_name + ' is stranded with ' + res.stranded_count + ' people. Depth: ' + res.water_depth + '. GPS Location: ' + mapsLink + ' | Urgent NDRF Rescue Required!';
+        const waLink = document.getElementById('sosWaLink');
+        if (waLink) waLink.href = 'https://wa.me/?text=' + encodeURIComponent(sosText);
+        const smsLink = document.getElementById('sosSmsLink');
+        if (smsLink) smsLink.href = 'sms:?body=' + encodeURIComponent(sosText);
+
         // Plot new SOS beacon marker on map
         if (maps.dash) {
           L.circleMarker([res.lat, res.lng], { radius: 12, color: '#EF4444', fillColor: '#DC2626', fillOpacity: 0.95 })
@@ -957,6 +980,12 @@
         document.getElementById('sosAckId').innerText = 'SOS-903';
         document.getElementById('sosAckUnit').innerText = 'NDRF QRT Boat Unit 02';
         document.getElementById('sosAckEta').innerText = '6 mins';
+        
+        const fallbackText = '🚨 EMERGENCY FLASH FLOOD SOS: Stranded citizens need immediate evacuation. GPS: https://maps.google.com/?q=' + userGps.lat + ',' + userGps.lng;
+        const waLink = document.getElementById('sosWaLink');
+        if (waLink) waLink.href = 'https://wa.me/?text=' + encodeURIComponent(fallbackText);
+        const smsLink = document.getElementById('sosSmsLink');
+        if (smsLink) smsLink.href = 'sms:?body=' + encodeURIComponent(fallbackText);
       });
     }
 
