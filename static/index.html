@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLOODTWIN AI — Hyper-Local Flash Flood Prediction & Evacuation System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: #080C14; color: #F3F4F6; font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080C14; }
+    ::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+  <header class="sticky top-0 z-50 bg-[#0B111E]/95 backdrop-blur border-b border-slate-800 p-3 shadow-xl">
+    <div class="max-w-[1750px] mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🌊</span>
+        <div>
+          <h1 class="text-lg font-black text-white font-mono flex items-center gap-2">
+            FLOODTWIN <span class="text-cyan-400">AI</span>
+            <span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/40 animate-pulse">● LIVE EOC</span>
+          </h1>
+          <p class="text-xs text-slate-400">AI-Powered Hyper-Local Flash Flood Prediction & Dynamic Evacuation System (NDRF)</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3 text-xs font-mono">
+        <span class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded text-emerald-400">NASA IMERG: 30m NRT</span>
+        <span class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded text-cyan-400">LoRa Mesh: ACTIVE</span>
+        <button onclick="playSiren()" class="bg-red-600/30 hover:bg-red-600/50 border border-red-500/50 text-red-300 font-bold px-3 py-1 rounded">TEST SIREN</button>
+      </div>
+    </div>
+
+    <!-- 10-Step Demo Bar -->
+    <div class="max-w-[1750px] mx-auto mt-2 pt-2 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-2 text-xs">
+      <div class="flex items-center space-x-1.5 shrink-0">
+        <button onclick="navStep(-1)" class="bg-slate-800 px-2 py-1 rounded text-white font-bold">&lt;</button>
+        <span id="badgeStep" class="font-mono font-bold text-cyan-400 px-2">DEMO STEP 1/10</span>
+        <button onclick="navStep(1)" class="bg-slate-800 px-2 py-1 rounded text-white font-bold">&gt;</button>
+        <div id="pills" class="flex space-x-1 overflow-x-auto max-w-[450px]"></div>
+      </div>
+      <div class="flex-1 bg-slate-950/80 px-3 py-1 rounded border border-cyan-900/40 text-slate-200">
+        <b id="titleStep" class="text-cyan-300">STEP 1: Baseline Normal Situational Awareness</b> - <span id="descStep">Village A is in Moderate status. System fuses NASA IMERG rainfall, river gauges, and DEM terrain.</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-[#090D18] border-b border-slate-800 px-4 py-2">
+    <div class="max-w-[1750px] mx-auto flex space-x-2 text-xs font-semibold overflow-x-auto">
+      <button onclick="setTab('dash')" id="btn-dash" class="tab-btn bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-3.5 py-1.5 rounded-lg">1. Command Dashboard</button>
+      <button onclick="setTab('map')" id="btn-map" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">2. Hyper-Local 250m Map</button>
+      <button onclick="setTab('village')" id="btn-village" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">3. Village Intel & XAI (SHAP)</button>
+      <button onclick="setTab('twin')" id="btn-twin" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">4. 4D Future Flood Twin</button>
+      <button onclick="setTab('evac')" id="btn-evac" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">5. Evacuation Router (A*)</button>
+      <button onclick="setTab('sensors')" id="btn-sensors" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">6. Sensor Health & Trust</button>
+      <button onclick="setTab('alerts')" id="btn-alerts" class="tab-btn text-slate-400 px-3.5 py-1.5 rounded-lg">7. Multilingual Alerts & AI Commander</button>
+    </div>
+  </div>
+
+  <main class="max-w-[1750px] mx-auto p-4 flex-1 w-full">
+    <!-- VIEW 1: DASHBOARD -->
+    <div id="tab-dash" class="tab-pane space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-[#0E1524] border border-red-500/40 p-4 rounded-xl shadow-lg">
+          <span class="text-xs text-red-400 font-mono font-bold">CRITICAL ZONES</span>
+          <div class="text-3xl font-black text-white font-mono mt-2" id="dashCrit">02</div>
+          <p class="text-xs text-slate-400 mt-1">Sector B3 & D3</p>
+        </div>
+        <div class="bg-[#0E1524] border border-amber-500/40 p-4 rounded-xl shadow-lg">
+          <span class="text-xs text-amber-400 font-mono font-bold">POPULATION AT RISK</span>
+          <div class="text-3xl font-black text-white font-mono mt-2" id="dashPop">4,250</div>
+          <p class="text-xs text-slate-400 mt-1">720 Vulnerable (Kids/Elderly)</p>
+        </div>
+        <div class="bg-[#0E1524] border border-cyan-500/40 p-4 rounded-xl shadow-lg">
+          <span class="text-xs text-cyan-400 font-mono font-bold">ACTIVE SENSORS</span>
+          <div class="text-3xl font-black text-white font-mono mt-2" id="dashSens">48/48</div>
+          <p class="text-xs text-slate-400 mt-1">98.2% Trust Avg</p>
+        </div>
+        <div class="bg-[#0E1524] border border-blue-500/40 p-4 rounded-xl shadow-lg">
+          <span class="text-xs text-blue-400 font-mono font-bold">ACTIVE ALERTS</span>
+          <div class="text-3xl font-black text-white font-mono mt-2">03</div>
+          <p class="text-xs text-slate-400 mt-1">Multilingual Broadcast</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-8 bg-[#0E1524] border border-slate-800 rounded-xl p-3 shadow-xl">
+          <div class="text-xs font-bold text-slate-300 uppercase mb-2">OPERATIONAL SECTOR MAP (250m RESOLUTION)</div>
+          <div id="mapDash" class="w-full h-[460px] rounded-lg"></div>
+        </div>
+        <div class="lg:col-span-4 space-y-3">
+          <div class="bg-gradient-to-b from-red-950/40 to-[#0E1524] border-2 border-red-500/60 rounded-xl p-4 shadow-xl">
+            <div class="flex justify-between items-center"><h3 class="text-xs font-black text-red-400 font-mono">CRITICAL FLASH FLOOD WARNING</h3><span class="text-[10px] bg-red-900/60 text-red-300 px-2 py-0.5 rounded font-bold">LEVEL 3</span></div>
+            <div class="mt-3 space-y-2 text-xs">
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Target Village:</span><span class="font-bold text-white">Zone B (Village B Lowlands)</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Risk Score:</span><span class="font-mono font-bold text-red-400 text-sm" id="dashRisk">91 / 100</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Lead Time:</span><span class="font-mono font-bold text-amber-300" id="dashLead">42-58 min</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Exposed Pop:</span><span class="font-mono font-bold text-white">2,430 residents</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Road-2 Submersion:</span><span class="font-mono font-bold text-red-400">In 27 minutes</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800"><span class="text-slate-400">Safe Route:</span><span class="font-semibold text-emerald-400">Road-4 to Shelter-02</span></div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <button onclick="setTab('village')" class="flex-1 py-1.5 bg-slate-800 text-xs font-semibold rounded text-slate-200">Why At Risk? (XAI)</button>
+              <button onclick="setTab('evac')" class="flex-1 py-1.5 bg-red-600 hover:bg-red-500 text-xs font-bold rounded text-white shadow-lg shadow-red-950/40">Evacuate Now</button>
+            </div>
+          </div>
+          <div class="bg-[#0E1524] border border-slate-800 rounded-xl p-4">
+            <h4 class="text-xs font-bold text-slate-300 uppercase mb-2">River Hydrology Dynamics</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 text-[10px]">River Stage</span><div class="font-mono font-bold text-cyan-300 text-sm" id="dashRiv">4.22 m</div></div>
+              <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 text-[10px]">Rate of Rise</span><div class="font-mono font-bold text-red-400 text-sm" id="dashVel">+51 cm/10m</div></div>
+              <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 text-[10px]">Rainfall (3h)</span><div class="font-mono font-bold text-blue-300 text-sm" id="dashRain">106 mm</div></div>
+              <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 text-[10px]">Soil Moisture</span><div class="font-mono font-bold text-amber-300 text-sm" id="dashSoil">91% Saturation</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: HYPER LOCAL MAP -->
+    <div id="tab-map" class="tab-pane hidden space-y-4">
+      <div class="bg-[#0E1524] border border-slate-800 p-4 rounded-xl shadow-xl">
+        <h3 class="text-sm font-bold text-white font-mono mb-2">250m x 250m Hyper-Local Resolution Grid GIS</h3>
+        <div id="mapFull" class="w-full h-[520px] rounded-lg"></div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: VILLAGE INTEL & XAI -->
+    <div id="tab-village" class="tab-pane hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-7 bg-[#0E1524] border border-slate-800 p-4 rounded-xl shadow-xl">
+          <h3 class="text-sm font-bold text-white font-mono uppercase mb-2">Explainable AI (XAI) - SHAP Factor Breakdown</h3>
+          <p class="text-xs text-slate-300 mb-4 bg-slate-900 p-2.5 rounded-lg border border-slate-800"><b>Primary Cause:</b> Saturated terrain (91%) combined with rapidly increasing upstream runoff down steep slopes.</p>
+          <div class="space-y-3" id="shapList"></div>
+        </div>
+        <div class="lg:col-span-5 bg-[#0E1524] border border-slate-800 p-4 rounded-xl shadow-xl">
+          <h3 class="text-xs font-bold text-slate-300 uppercase mb-3">Sliding Window Rainfall Profile</h3>
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex justify-between bg-slate-900 p-2.5 rounded border border-slate-800"><span>Rain 30m</span><b class="text-white">26 mm</b></div>
+            <div class="flex justify-between bg-slate-900 p-2.5 rounded border border-slate-800"><span>Rain 1h</span><b class="text-white">51 mm</b></div>
+            <div class="flex justify-between bg-slate-900 p-2.5 rounded border border-slate-800"><span>Rain 3h</span><b class="text-blue-300">106 mm</b></div>
+            <div class="flex justify-between bg-slate-900 p-2.5 rounded border border-slate-800"><span>Rain 24h</span><b class="text-white">184 mm</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: 4D TWIN -->
+    <div id="tab-twin" class="tab-pane hidden space-y-4">
+      <div class="bg-[#0E1524] border border-cyan-500/40 p-4 rounded-xl flex justify-between items-center shadow-xl">
+        <div><h2 class="text-sm font-black text-white font-mono">4D FLOOD DIGITAL TWIN SIMULATION</h2><p class="text-xs text-slate-400">Hydrodynamic Cellular Automata Spread across Time Horizons</p></div>
+        <div class="flex space-x-1">
+          <button onclick="twinStep('NOW')" class="px-3 py-1 bg-slate-900 rounded text-xs">NOW</button>
+          <button onclick="twinStep('+30m')" class="px-3 py-1 bg-slate-900 rounded text-xs">+30m</button>
+          <button onclick="twinStep('+60m')" class="px-3 py-1 bg-cyan-600 text-white rounded text-xs font-bold">+60m</button>
+          <button onclick="twinStep('+120m')" class="px-3 py-1 bg-slate-900 rounded text-xs">+120m</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-4 gap-2.5 p-4 bg-[#0E1524] rounded-xl border border-slate-800" id="twinGrid"></div>
+    </div>
+
+    <!-- VIEW 5: EVACUATION ROUTER -->
+    <div id="tab-evac" class="tab-pane hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-6 space-y-3">
+          <div class="p-4 rounded-xl border border-red-500 bg-red-950/20 shadow-lg">
+            <div class="flex justify-between"><b class="text-white text-sm">Route A (Riverside Path)</b><span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded font-mono font-bold">UNSAFE</span></div>
+            <p class="text-xs text-red-300 mt-2">Road-2 submerged in 18 min! Only 9 min buffer. Drowning trap danger.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-emerald-500 bg-slate-900 shadow-xl shadow-emerald-950/40">
+            <div class="flex justify-between"><b class="text-white text-sm">Route B (West Ridge Highway)</b><span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">SAFEST RECOMMENDED</span></div>
+            <p class="text-xs text-slate-200 mt-2">108 min safety margin along elevated ridge. Leads directly to Shelter-02.</p>
+          </div>
+        </div>
+        <div class="lg:col-span-6 bg-[#0E1524] border border-slate-800 p-4 rounded-xl shadow-xl">
+          <h3 class="text-xs font-bold text-white uppercase mb-3">Safe Shelter Capacity</h3>
+          <div class="p-3 bg-emerald-950/20 border border-emerald-500/50 rounded-lg text-xs">
+            <div class="flex justify-between font-bold text-white"><span>Shelter-02: Community Sports Complex</span><span class="text-emerald-400">540 beds avail</span></div>
+            <p class="text-slate-300 mt-1">Elevation: 1,530 m (High Ground) - Full Trauma & Medical Active</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 6: SENSORS -->
+    <div id="tab-sensors" class="tab-pane hidden space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="sensGrid"></div>
+    </div>
+
+    <!-- VIEW 7: ALERTS & AI COMMANDER -->
+    <div id="tab-alerts" class="tab-pane hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-6 bg-[#0E1524] border border-slate-800 p-4 rounded-xl shadow-xl">
+          <h3 class="text-xs font-bold text-white uppercase mb-2">Multilingual Warning Broadcast</h3>
+          <div class="p-3 bg-red-950/40 border border-red-500 rounded-lg text-xs space-y-2">
+            <b class="text-red-400 block">FLASH FLOOD CRITICAL EMERGENCY (Hindi/English/Regional)</b>
+            <p class="text-slate-200 leading-relaxed">Village B Emergency Evacuation Notice! River level rising rapidly. Immediately evacuate via Route B towards Shelter-02. Do not use Riverside Road-1.</p>
+          </div>
+          <button onclick="broadcastAlert()" id="bcBtn" class="w-full mt-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded font-bold text-xs font-mono">ISSUE LEVEL 3 BROADCAST</button>
+        </div>
+        <div class="lg:col-span-6 bg-[#0E1524] border border-slate-800 p-4 rounded-xl flex flex-col h-[480px] shadow-xl">
+          <h3 class="text-xs font-bold text-white uppercase mb-2">AI Incident Commander</h3>
+          <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 text-xs pr-1">
+            <div class="bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-200">Hello, <b>AI Incident Commander Ready.</b> Ask tactical disaster questions.</div>
+          </div>
+          <div class="mt-2 pt-2 border-t border-slate-800 flex gap-2">
+            <input type="text" id="chatIn" placeholder="Ask tactical questions..." class="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-white">
+            <button onclick="askCmd()" class="px-3 bg-indigo-600 text-white rounded text-xs font-bold">Ask</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let cStep = 1;
+    let mDash = null, mFull = null;
+
+    const steps = [
+      { s: 1, t: '1. Baseline Normal', d: 'Village A in Moderate status (21 mm/h, river 2.7m)', tab: 'dash' },
+      { s: 2, t: '2. Heavy Rainfall', d: 'Cloudburst surge 21 -> 52 mm/hr, 106mm 3h sum', tab: 'dash' },
+      { s: 3, t: '3. River Rapid Rise', d: 'River shoots to 4.22m (+51cm/10m velocity)', tab: 'dash' },
+      { s: 4, t: '4. CRITICAL Red Alert', d: 'Risk 91/100, impact window 42-58 min', tab: 'dash' },
+      { s: 5, t: '5. Explainable AI', d: 'SHAP feature contribution decomposition', tab: 'village' },
+      { s: 6, t: '6. 4D Digital Twin', d: 'Simulation inundation expansion to +120m', tab: 'twin' },
+      { s: 7, t: '7. Road-2 Submersion', d: 'Market Bridge fails in 27m -> UNSAFE', tab: 'evac' },
+      { s: 8, t: '8. Evacuation Reroute', d: 'Dynamic route calculation to Shelter-02', tab: 'evac' },
+      { s: 9, t: '9. Multilingual Alert', d: 'Hindi/Regional broadcast & sirens', tab: 'alerts' },
+      { s: 10, t: '10. AI Commander Brief', d: 'Grounded NDRF SOP action directives', tab: 'alerts' }
+    ];
+
+    function setTab(t) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('bg-cyan-500/20', 'text-cyan-300', 'border', 'border-cyan-500/40'));
+      document.getElementById('tab-' + t).classList.remove('hidden');
+      document.getElementById('btn-' + t).classList.add('bg-cyan-500/20', 'text-cyan-300', 'border', 'border-cyan-500/40');
+      if (t === 'dash' && mDash) setTimeout(() => mDash.invalidateSize(), 50);
+      if (t === 'map' && mFull) setTimeout(() => mFull.invalidateSize(), 50);
+    }
+
+    function renderPills() {
+      document.getElementById('pills').innerHTML = steps.map(x => `
+        <button onclick="setDemoStep(${x.s})" class="px-2 py-0.5 rounded text-[10px] font-mono ${cStep === x.s ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-400 border border-slate-800'}">S${x.s}</button>
+      `).join('');
+    }
+
+    async function setDemoStep(num) {
+      cStep = num;
+      const x = steps[num - 1];
+      document.getElementById('badgeStep').innerText = `DEMO STEP ${num}/10`;
+      document.getElementById('titleStep').innerText = x.t;
+      document.getElementById('descStep').innerText = x.d;
+      renderPills();
+      setTab(x.tab);
+      try {
+        await fetch('/api/demo/set-step/' + num, { method: 'POST' });
+        loadData();
+      } catch (e) {}
+    }
+
+    function navStep(d) {
+      const n = cStep + d;
+      if (n >= 1 && n <= 10) setDemoStep(n);
+    }
+
+    function playSiren() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(440, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.4);
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.8);
+        g.gain.setValueAtTime(0.3, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 1.2);
+      } catch (e) {}
+    }
+
+    function broadcastAlert() {
+      playSiren();
+      const b = document.getElementById('bcBtn');
+      b.innerText = 'SENT TO 1,843 CITIZENS';
+      setTimeout(() => b.innerText = 'ISSUE LEVEL 3 BROADCAST', 4000);
+    }
+
+    async function askCmd() {
+      const inp = document.getElementById('chatIn');
+      const q = inp.value.trim();
+      if (!q) return;
+      inp.value = '';
+      const box = document.getElementById('chatBox');
+      box.innerHTML += `<div class="bg-blue-600 text-white p-2 rounded ml-auto max-w-[85%]">${q}</div>`;
+      try {
+        const res = await fetch('/api/commander/ask', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: q}) });
+        const d = await res.json();
+        box.innerHTML += `<div class="bg-slate-900 border border-slate-800 p-2.5 rounded max-w-[90%]">${d.answer.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}</div>`;
+      } catch (e) {
+        box.innerHTML += `<div class="bg-slate-900 border border-slate-800 p-2.5 rounded max-w-[90%]"><b>Zone B</b> priority risk: 91/100. Evacuate via Route B.</div>`;
+      }
+      box.scrollTop = box.scrollHeight;
+    }
+
+    const twinGrids = [
+      {id:'A1', risk:'LOW', d:'0.0m'}, {id:'A2', risk:'MOD', d:'0.2m'}, {id:'A3', risk:'HIGH', d:'0.6m'}, {id:'A4', risk:'CRITICAL', d:'1.1m'},
+      {id:'B1', risk:'MOD', d:'0.3m'}, {id:'B2', risk:'CRITICAL', d:'1.2m'}, {id:'B3', risk:'CRITICAL', d:'1.6m'}, {id:'B4', risk:'CRITICAL', d:'1.8m'},
+      {id:'C1', risk:'MOD', d:'0.3m'}, {id:'C2', risk:'CRITICAL', d:'1.1m'}, {id:'C3', risk:'CRITICAL', d:'1.7m'}, {id:'C4', risk:'CRITICAL', d:'2.0m'},
+      {id:'D1', risk:'LOW', d:'0.1m'}, {id:'D2', risk:'HIGH', d:'0.7m'}, {id:'D3', risk:'CRITICAL', d:'1.5m'}, {id:'D4', risk:'CRITICAL', d:'1.6m'}
+    ];
+
+    function twinStep(st) {
+      document.getElementById('twinGrid').innerHTML = twinGrids.map(c => `
+        <div class="p-3 rounded-lg border h-20 flex flex-col justify-between ${c.risk==='CRITICAL'?'bg-red-600/70 border-red-500':'bg-yellow-500/40 border-yellow-500'}">
+          <div class="flex justify-between font-mono text-xs"><b>${c.id}</b><span>${c.risk}</span></div>
+          <div class="text-center font-bold text-sm text-white">${c.d}</div>
+        </div>
+      `).join('');
+    }
+
+    const shapF = [
+      {n:'Extreme Rainfall (3h/24h)', p:29}, {n:'Rapid River Rise Velocity', p:23}, {n:'Soil Saturation (91%)', p:19},
+      {n:'Steep Upstream Terrain', p:16}, {n:'Forecast Rain', p:9}, {n:'Historical Risk', p:4}
+    ];
+
+    function renderShapF() {
+      document.getElementById('shapList').innerHTML = shapF.map(f => `
+        <div class="bg-slate-900/60 p-2 rounded border border-slate-800 text-xs">
+          <div class="flex justify-between mb-1"><span>${f.n}</span><b class="text-cyan-300">+${f.p}%</b></div>
+          <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden"><div class="bg-cyan-400 h-full" style="width:${f.p*3}%"></div></div>
+        </div>
+      `).join('');
+    }
+
+    const sensorList = [
+      { id: "R-01", name: "River Gauge #01 (Bridge)", loc: "Sector B3", val: "4.22 m", trust: 98, status: "HEALTHY" },
+      { id: "R-02", name: "River Gauge #02 (Confluence)", loc: "Sector C3", val: "3.85 m", trust: 96, status: "HEALTHY" },
+      { id: "R-12", name: "River Gauge #12 (Anomaly Node)", loc: "Sector D4", val: "17.9 m", trust: 24, status: "POSSIBLE_FAILURE" },
+      { id: "RG-01", name: "Optical Rain Gauge #01", loc: "High Ridge A2", val: "52 mm/h", trust: 99, status: "HEALTHY" },
+      { id: "SM-01", name: "Soil Moisture Probe #01", loc: "Slope A3", val: "91.4%", trust: 95, status: "HEALTHY" },
+      { id: "GW-01", name: "LoRa Gateway Peak Alpha", loc: "Tower Peak", val: "100% Uptime", trust: 100, status: "ONLINE" }
+    ];
+
+    function renderSensors() {
+      document.getElementById('sensGrid').innerHTML = sensorList.map(s => `
+        <div class="p-3 rounded-lg border ${s.status === 'POSSIBLE_FAILURE' ? 'border-red-500/60 bg-red-950/20' : 'border-slate-800 bg-slate-900/60'}">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-mono font-bold text-xs text-white">${s.id}: ${s.name}</span>
+              <span class="text-[11px] text-slate-400 block">${s.loc}</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${s.status === 'POSSIBLE_FAILURE' ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'}">${s.status}</span>
+          </div>
+          <div class="mt-2.5 flex items-center justify-between text-xs font-mono">
+            <span class="text-slate-300">Val: <b class="${s.status === 'POSSIBLE_FAILURE' ? 'text-red-400' : 'text-cyan-300'}">${s.val}</b></span>
+            <span class="text-slate-400">Trust: <b class="${s.trust < 50 ? 'text-red-400' : 'text-emerald-400'}">${s.trust}/100</b></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch('/api/dashboard/summary');
+        const d = await res.json();
+        if (d.metrics) {
+          document.getElementById('dashCrit').innerText = '0' + d.metrics.critical_zones;
+          document.getElementById('dashPop').innerText = Number(d.metrics.population_at_risk).toLocaleString();
+          document.getElementById('dashSens').innerText = d.metrics.active_sensors;
+          document.getElementById('dashRiv').innerText = d.metrics.river_water_level;
+          document.getElementById('dashVel').innerText = d.metrics.river_rise_velocity;
+          document.getElementById('dashRain').innerText = d.metrics.satellite_rainfall_imerg;
+        }
+        if (d.prediction) {
+          document.getElementById('dashRisk').innerText = d.prediction.risk_score + ' / 100';
+          document.getElementById('dashLead').innerText = d.prediction.lead_time_range;
+        }
+      } catch (e) {}
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPills();
+      renderShapF();
+      twinStep('+60m');
+      renderSensors();
+      loadData();
+
+      mDash = L.map('mapDash').setView([30.3750, 79.3250], 14);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mDash);
+      L.rectangle([[30.3725, 79.3300], [30.3700, 79.3325]], {color: '#ef4444', weight: 2, fillColor: '#ef4444', fillOpacity: 0.5}).addTo(mDash).bindPopup('<b>Sector B3 - CRITICAL</b>');
+      L.circleMarker([30.3715, 79.3315], {radius: 8, color: '#06b6d4', fillColor: '#0891b2', fillOpacity: 0.9}).addTo(mDash).bindPopup('River Gauge R-01 (4.22m)');
+
+      mFull = L.map('mapFull').setView([30.3715, 79.3290], 14);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mFull);
+    });
+  </script>
+</body>
+</html>
