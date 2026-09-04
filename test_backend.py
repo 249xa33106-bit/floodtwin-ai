@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from fastapi.testclient import TestClient
 from main import app
 from ml_engine import FloodRiskEngine
