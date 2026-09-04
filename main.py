@@ -14,6 +14,7 @@ from commander_ai import IncidentCommanderAI
 from alerts_engine import EmergencyAlertsEngine
 from demo_scenarios import DemoScenariosEngine
 from live_data import LiveDataIngestionEngine
+from sos_engine import SOSDistressEngine
 
 app = FastAPI(
     title="FloodTwin AI — Decision Support Platform for NDRF",
@@ -39,6 +40,7 @@ commander_ai = IncidentCommanderAI()
 alerts_engine = EmergencyAlertsEngine()
 demo_engine = DemoScenariosEngine()
 live_engine = LiveDataIngestionEngine()
+sos_engine = SOSDistressEngine()
 
 class TelemetryInput(BaseModel):
     rain_intensity: Optional[float] = 47.0
@@ -304,6 +306,43 @@ def run_what_if_simulation(data: WhatIfSimulationInput):
         "digital_twin": twin,
         "evacuation": routes
     }
+
+class SOSRequestInput(BaseModel):
+    lat: float
+    lng: float
+    accuracy_m: Optional[float] = 5.0
+    location_name: Optional[str] = "Live GPS Coordinates"
+    sender_name: Optional[str] = "Civilian in Distress"
+    sender_phone: Optional[str] = ""
+    stranded_count: Optional[int] = 1
+    water_depth: Optional[str] = "Waist-Deep"
+    medical_urgency: Optional[str] = "None"
+    notify_telegram: Optional[bool] = True
+    notify_sms: Optional[bool] = True
+
+@app.post("/api/sos/trigger")
+def trigger_real_sos(data: SOSRequestInput):
+    return sos_engine.trigger_real_sos(
+        lat=data.lat,
+        lng=data.lng,
+        accuracy_m=data.accuracy_m or 5.0,
+        location_name=data.location_name or "Live GPS Coordinates",
+        sender_name=data.sender_name or "Civilian in Distress",
+        sender_phone=data.sender_phone or "",
+        stranded_count=data.stranded_count or 1,
+        water_depth=data.water_depth or "Waist-Deep",
+        medical_urgency=data.medical_urgency or "None",
+        notify_telegram=data.notify_telegram if data.notify_telegram is not None else True,
+        notify_sms=data.notify_sms if data.notify_sms is not None else True
+    )
+
+@app.get("/api/sos/active")
+def get_active_sos_beacons():
+    return sos_engine.get_active_beacons()
+
+@app.post("/api/sos/resolve/{beacon_id}")
+def resolve_sos_beacon(beacon_id: str):
+    return sos_engine.resolve_beacon(beacon_id)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
