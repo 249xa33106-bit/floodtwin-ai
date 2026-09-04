@@ -15,6 +15,9 @@
     ::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 3px; }
     .glow-red { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
     .glow-cyan { box-shadow: 0 0 15px rgba(6, 182, 212, 0.4); }
+    .dark-map-tiles {
+      filter: brightness(0.7) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.75);
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
@@ -188,11 +191,6 @@
           <div>
             <h2 class="text-sm font-bold text-white uppercase">HYPER-LOCAL 250m CELLULAR GRID</h2>
             <p class="text-xs text-slate-400">Physics cellular automata runoff overlay + telemetry IoT sensor nodes</p>
-          </div>
-          <div class="flex gap-2 text-xs">
-            <button class="bg-slate-800 px-3 py-1 rounded text-cyan-300 font-mono">ALL LAYERS</button>
-            <button class="bg-slate-800 px-3 py-1 rounded text-slate-300 font-mono">SENSORS ONLY</button>
-            <button class="bg-slate-800 px-3 py-1 rounded text-slate-300 font-mono">INUNDATION ONLY</button>
           </div>
         </div>
         <div id="mapFull" class="w-full h-[620px] rounded-lg"></div>
@@ -417,7 +415,7 @@
             <div class="space-y-2.5 text-xs">
               <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800"><b class="text-cyan-300">English:</b><p class="text-slate-200 mt-0.5">EMERGENCY: Extreme Flash Flood Warning for Zone B. Submergence in 27m. Evacuate via Route B to Shelter 2.</p></div>
               <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800"><b class="text-amber-300">Hindi (हिन्दी):</b><p class="text-slate-200 mt-0.5">आपातकालीन चेतावनी: जोन बी में अत्यधिक बाढ़ की चेतावनी। तुरंत सुरक्षित मार्ग बी से शेल्टर 2 की ओर जाएं।</p></div>
-              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800"><b class="text-emerald-300">Telugu (తెలుగు):</b><p class="text-slate-200 mt-0.5">అత్యవసర హెచ్చరిక: జోన్ బి కొరకు ఆకస్మిక వరద హెచ్చరిక. వెంటనే సురక్షిత మార్గం బి ద్వారా షెల్టర్ 2 కి వెళ్ళండి.</p></div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800"><b class="text-emerald-300">Telugu (తెలుగు):</b><p class="text-slate-200 mt-0.5">అత్యవసర హెచ్చరిక: జోన్ బి కొరకు ఆకస్మిక వరద హెచ్చరిక. వెంటనే సురక్షిత మార్గం బి ద్వారా షెल्टर 2 కి వెళ్ళండి.</p></div>
             </div>
           </div>
         </div>
@@ -461,6 +459,7 @@
     let currentHotspot = 'chamoli';
     let currentStep = 1;
     let maps = {};
+    let twinFloodCircles = [];
 
     const DEMO_STEPS = [
       { num: 1, title: 'Step 1: Baseline Normal Situational Awareness', desc: 'System fuses real-time satellite precipitation, river gauges, and terrain slope.' },
@@ -529,16 +528,21 @@
 
       setTimeout(() => {
         if (name === 'map' && maps.full) maps.full.invalidateSize();
-        if (name === 'twin' && maps.twin) maps.twin.invalidateSize();
+        if (name === 'twin' && maps.twin) {
+          maps.twin.invalidateSize();
+          setTwinStep(0);
+        }
         if (name === 'evac' && maps.evac) maps.evac.invalidateSize();
         if (name === 'dash' && maps.dash) maps.dash.invalidateSize();
       }, 200);
     }
 
-    function getBaseLayer() {
-      return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '&copy; Esri &copy; OpenStreetMap',
-        maxZoom: 16
+    function getCleanBaseLayer() {
+      // High-performance OpenStreetMap layer with tactical dark night styling (100% Free, NO WATERMARKS)
+      return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18,
+        className: 'dark-map-tiles'
       });
     }
 
@@ -547,22 +551,22 @@
 
       // Dashboard Map
       maps.dash = L.map('mapDash').setView([h.lat, h.lng], 13);
-      getBaseLayer().addTo(maps.dash);
+      getCleanBaseLayer().addTo(maps.dash);
       populateMapFeatures(maps.dash, h);
 
       // Full Grid Map
       maps.full = L.map('mapFull').setView([h.lat, h.lng], 13);
-      getBaseLayer().addTo(maps.full);
+      getCleanBaseLayer().addTo(maps.full);
       populateMapFeatures(maps.full, h);
 
       // Twin Map
       maps.twin = L.map('mapTwin').setView([h.lat, h.lng], 13);
-      getBaseLayer().addTo(maps.twin);
+      getCleanBaseLayer().addTo(maps.twin);
       populateMapFeatures(maps.twin, h);
 
       // Evac Map
       maps.evac = L.map('mapEvac').setView([h.lat, h.lng], 13);
-      getBaseLayer().addTo(maps.evac);
+      getCleanBaseLayer().addTo(maps.evac);
       populateMapFeatures(maps.evac, h);
       drawEvacRoutes(maps.evac, h);
     }
@@ -577,11 +581,11 @@
       L.marker([h.lat + 0.016, h.lng + 0.017]).addTo(map).bindPopup('<b>🏫 Shelter 1 (High School)</b><br>Capacity: 1,500');
       L.marker([h.lat + 0.018, h.lng - 0.005]).addTo(map).bindPopup('<b>🏥 Shelter 2 (Elevated Center)</b><br>Capacity: 2,800');
 
-      // Random Sensor nodes
+      // Sensor nodes
       for (let i = 0; i < 15; i++) {
         const offsetLat = (Math.random() - 0.5) * 0.03;
         const offsetLng = (Math.random() - 0.5) * 0.03;
-        L.circleMarker([h.lat + offsetLat, h.lng + offsetLng], { radius: 4, color: '#06B6D4', fillColor: '#06B6D4', fillOpacity: 0.8 }).addTo(map);
+        L.circleMarker([h.lat + offsetLat, h.lng + offsetLng], { radius: 4, color: '#06B6D4', fillColor: '#06B6D4', fillOpacity: 0.85 }).addTo(map);
       }
     }
 
@@ -651,6 +655,26 @@
         'T+120m Peak Surge: Stage 6.20m. Runoff spreads across 1.8km² basin.'
       ];
       document.getElementById('twinDesc').innerText = descMap[idx] || descMap[0];
+
+      // Dynamically animate 4D flood polygon on map
+      if (maps.twin) {
+        twinFloodCircles.forEach(c => maps.twin.removeLayer(c));
+        twinFloodCircles = [];
+
+        const h = HOTSPOTS[currentHotspot];
+        const radii = [250, 600, 950, 1350, 1750];
+        const opacities = [0.25, 0.4, 0.55, 0.7, 0.85];
+
+        const fc = L.circle([h.lat + 0.004, h.lng - 0.005], {
+          radius: radii[idx] || 300,
+          color: '#06B6D4',
+          fillColor: '#0284C7',
+          fillOpacity: opacities[idx] || 0.4,
+          weight: 2
+        }).addTo(maps.twin);
+
+        twinFloodCircles.push(fc);
+      }
     }
 
     function updateSandboxVals() {
