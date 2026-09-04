@@ -224,6 +224,57 @@ def get_live_hotspots():
 def get_live_weather(hotspot: str = Query("chamoli")):
     return live_engine.fetch_live_hotspot_weather(hotspot)
 
+@app.get("/api/global/search")
+def search_global_places(q: str = Query(...)):
+    return live_engine.search_global_city(q)
+
+@app.get("/api/global/live-weather")
+def get_global_coordinates_weather(lat: float = Query(...), lng: float = Query(...), name: str = Query("Custom Location")):
+    return live_engine.fetch_live_coordinates_weather(lat, lng, name)
+
+class GlobalLocationAnalysisInput(BaseModel):
+    lat: float
+    lng: float
+    location_name: Optional[str] = "Selected Coordinates"
+
+@app.post("/api/global/analyze")
+def analyze_global_location(data: GlobalLocationAnalysisInput):
+    weather = live_engine.fetch_live_coordinates_weather(data.lat, data.lng, data.location_name)
+    features = {
+        "rain_intensity": weather.get("live_rain_intensity_mmh", 35.0),
+        "rain_30min": weather.get("live_rain_intensity_mmh", 35.0) * 0.5,
+        "rain_1h": weather.get("live_rain_intensity_mmh", 35.0),
+        "rain_3h": weather.get("rain_3h_sum_mm", 60.0),
+        "rain_6h": weather.get("rain_3h_sum_mm", 60.0) * 1.5,
+        "rain_24h": weather.get("rain_24h_sum_mm", 110.0),
+        "forecast_rain_1h": weather.get("forecast_1h_mm", 40.0),
+        "soil_moisture": weather.get("soil_saturation_pct", 78.0),
+        "river_level": 3.85,
+        "water_level_rise_10m": 32.0,
+        "water_level_acceleration": 4.5,
+        "elevation": weather.get("elevation_m", 150.0),
+        "slope": 18.0,
+        "distance_from_river": 90.0
+    }
+    prediction = ml_engine.predict(features)
+    twin = twin_engine.simulate_timesteps(
+        rain_intensity=features["rain_intensity"],
+        river_level=features["river_level"],
+        soil_saturation=features["soil_moisture"]
+    )
+    evac = evac_engine.calculate_evacuation_routes("Global-Sector-A", features["rain_intensity"], features["river_level"])
+    return {
+        "location": {
+            "name": data.location_name,
+            "lat": data.lat,
+            "lng": data.lng
+        },
+        "weather": weather,
+        "prediction": prediction,
+        "digital_twin": twin,
+        "evacuation": evac
+    }
+
 @app.post("/api/simulator/what-if")
 def run_what_if_simulation(data: WhatIfSimulationInput):
     # Compute live combined risk based on what-if surge parameters
