@@ -274,10 +274,13 @@
     <div class="absolute bottom-20 right-4 z-20 flex flex-col gap-1.5 pointer-events-auto">
       <div class="glass-hud rounded-2xl p-1.5 flex flex-col gap-1 text-xs font-mono shadow-2xl">
         <button onclick="switchMapLayer('sat')" id="layerBtn-sat" class="px-3 py-1.5 rounded-xl bg-cyan-600 text-white font-bold transition flex items-center gap-1.5 shadow">
-          <span>🛰️</span> Satellite HD
+          <span>🛰️</span> Hybrid Satellite
         </button>
         <button onclick="switchMapLayer('dark')" id="layerBtn-dark" class="px-3 py-1.5 rounded-xl text-slate-300 hover:bg-slate-800 transition flex items-center gap-1.5">
-          <span>🌑</span> Dark Grid
+          <span>🌑</span> Dark Tactical
+        </button>
+        <button onclick="switchMapLayer('terrain')" id="layerBtn-terrain" class="px-3 py-1.5 rounded-xl text-slate-300 hover:bg-slate-800 transition flex items-center gap-1.5">
+          <span>🏔️</span> Topo / Basin
         </button>
         <button onclick="switchMapLayer('osm')" id="layerBtn-osm" class="px-3 py-1.5 rounded-xl text-slate-300 hover:bg-slate-800 transition flex items-center gap-1.5">
           <span>🗺️</span> Streets
@@ -701,38 +704,36 @@
 
     function getBaseLayer(type) {
       if (type === 'sat') {
-        return L.layerGroup([
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri, Maxar, Earthstar Geographics, USDA, USGS, AeroGRID, IGN',
-            maxZoom: 19
-          }),
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '',
-            maxZoom: 19
-          })
-        ]);
-      } else if (type === 'osm') {
+        return L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '&copy; Google Hybrid Satellite / NASA GPM / ESA Sentinel-1',
+          maxZoom: 22,
+          maxNativeZoom: 20
+        });
+      } else if (type === 'dark') {
+        return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '&copy; CARTO &copy; OpenStreetMap contributors',
+          subdomains: 'abcd',
+          maxZoom: 20
+        });
+      } else if (type === 'terrain') {
+        return L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+          subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+          attribution: '&copy; Google Elevation & Flood Basins',
+          maxZoom: 20,
+          maxNativeZoom: 20
+        });
+      } else {
         return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap contributors',
           maxZoom: 19
         });
-      } else {
-        return L.layerGroup([
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '&copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
-          }),
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-            attribution: '',
-            maxZoom: 16
-          })
-        ]);
       }
     }
 
     function switchMapLayer(type) {
       activeMapLayerType = type;
-      ['sat', 'dark', 'osm'].forEach(t => {
+      ['sat', 'dark', 'terrain', 'osm'].forEach(t => {
         const btn = document.getElementById('layerBtn-' + t);
         if (btn) {
           if (t === type) {
