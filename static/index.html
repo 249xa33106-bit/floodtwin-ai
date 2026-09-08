@@ -1431,7 +1431,7 @@
       .then(res => {
         const aMsg = document.createElement('div');
         aMsg.className = 'bg-slate-950 p-3.5 rounded-2xl border border-slate-800 text-slate-200';
-        aMsg.innerHTML = '<b class="text-cyan-400">Disaster Commander AI:</b> ' + (res.response || 'Tactical directive received. Safe Route B remains operational.');
+        aMsg.innerHTML = '<b class="text-cyan-400">Disaster Commander AI:</b> ' + (res.answer || res.response || 'Tactical directive received. Safe Route B remains operational.');
         logs.appendChild(aMsg);
         logs.scrollTop = logs.scrollHeight;
       })
